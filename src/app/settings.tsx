@@ -1,6 +1,16 @@
 import { useState, useEffect } from "react";
-import { View, Text, TextInput, Pressable, Alert } from "react-native";
+import {
+  View,
+  Text,
+  TextInput,
+  Pressable,
+  Alert,
+  ScrollView,
+  StyleSheet,
+} from "react-native";
+import Animated, { FadeInDown } from "react-native-reanimated";
 import { useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import * as DocumentPicker from "expo-document-picker";
 import * as Sharing from "expo-sharing";
@@ -9,15 +19,96 @@ import { useSQLiteContext } from "expo-sqlite";
 import { usePreferences } from "@/hooks/usePreferences";
 import { useTheme } from "@/hooks/useTheme";
 import { Container } from "@/components/ui/Container";
+import { Card } from "@/components/ui/Card";
 import { ACCENT_PRESETS, AccentKey } from "@/lib/constants";
 import { exportDatabase, importDatabase } from "@/lib/export-import";
 
 const ACCENT_KEYS = Object.keys(ACCENT_PRESETS) as AccentKey[];
 
+const ACCENT_LABELS: Record<AccentKey, string> = {
+  blue: "Bleu",
+  red: "Rouge",
+  purple: "Violet",
+  green: "Vert",
+  orange: "Orange",
+  pink: "Rose",
+  teal: "Sarcelle",
+  indigo: "Indigo",
+};
+
+interface SettingsRowProps {
+  icon: keyof typeof Ionicons.glyphMap;
+  iconColor?: string;
+  label: string;
+  subtitle?: string;
+  onPress: () => void;
+  disabled?: boolean;
+  trailing?: React.ReactNode;
+}
+
+function SettingsRow({
+  icon,
+  iconColor,
+  label,
+  subtitle,
+  onPress,
+  disabled,
+  trailing,
+}: SettingsRowProps) {
+  const { colors } = useTheme();
+
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+      className="flex-row items-center py-3.5 active:opacity-70"
+    >
+      <View
+        style={[
+          styles.rowIcon,
+          { backgroundColor: (iconColor || colors.accent) + "15" },
+        ]}
+      >
+        <Ionicons
+          name={icon}
+          size={18}
+          color={iconColor || colors.accent}
+        />
+      </View>
+      <View className="flex-1 ml-3">
+        <Text className="text-base text-textPrimary">{label}</Text>
+        {subtitle && (
+          <Text className="text-xs text-textTertiary mt-0.5">
+            {subtitle}
+          </Text>
+        )}
+      </View>
+      {trailing || (
+        <Ionicons
+          name="chevron-forward"
+          size={16}
+          color={colors.textTertiary}
+        />
+      )}
+    </Pressable>
+  );
+}
+
+function SectionHeader({ title, delay = 0 }: { title: string; delay?: number }) {
+  return (
+    <Animated.View entering={FadeInDown.duration(400).delay(delay)}>
+      <Text className="text-xs font-bold text-textTertiary tracking-widest uppercase mb-2 mt-6 ml-1">
+        {title}
+      </Text>
+    </Animated.View>
+  );
+}
+
 export default function SettingsScreen() {
   const router = useRouter();
   const db = useSQLiteContext();
-  const { firstName, setFirstName, accentKey, setAccentKey } = usePreferences();
+  const { firstName, setFirstName, accentKey, setAccentKey } =
+    usePreferences();
   const { colors, isDark } = useTheme();
   const [name, setName] = useState("");
   const [exporting, setExporting] = useState(false);
@@ -29,6 +120,7 @@ export default function SettingsScreen() {
 
   const handleSave = async () => {
     await setFirstName(name.trim());
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     router.back();
   };
 
@@ -43,7 +135,9 @@ export default function SettingsScreen() {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       const json = await exportDatabase(db);
 
-      const fileName = `workout-tracker-${new Date().toISOString().slice(0, 10)}.json`;
+      const fileName = `workout-tracker-${new Date()
+        .toISOString()
+        .slice(0, 10)}.json`;
       const file = new File(Paths.cache, fileName);
       file.write(json);
 
@@ -53,7 +147,7 @@ export default function SettingsScreen() {
       });
     } catch (error) {
       if ((error as Error).message?.includes("cancel")) return;
-      Alert.alert("Erreur", "Impossible d'exporter les donnees");
+      Alert.alert("Erreur", "Impossible d'exporter les données");
     } finally {
       setExporting(false);
     }
@@ -73,7 +167,6 @@ export default function SettingsScreen() {
       const importedFile = new File(file.uri);
       const json = await importedFile.text();
 
-      // Valider que c'est du JSON parsable
       try {
         JSON.parse(json);
       } catch {
@@ -82,7 +175,7 @@ export default function SettingsScreen() {
       }
 
       Alert.alert(
-        "Importer les donnees",
+        "Importer les données",
         "Comment voulez-vous importer ?",
         [
           {
@@ -95,7 +188,7 @@ export default function SettingsScreen() {
             onPress: () => {
               Alert.alert(
                 "Confirmer le remplacement",
-                "Toutes vos donnees actuelles seront supprimees et remplacees par le fichier importe.",
+                "Toutes vos données actuelles seront supprimées et remplacées.",
                 [
                   { text: "Annuler", style: "cancel" },
                   {
@@ -123,14 +216,11 @@ export default function SettingsScreen() {
 
       const message =
         mode === "merge"
-          ? `${stats.sessionsCount} nouvelle(s) seance(s) et ${stats.exercisesCount} nouvel(s) exercice(s) ajoute(s).`
-          : `${stats.sessionsCount} seance(s) et ${stats.exercisesCount} exercice(s) importes.`;
+          ? `${stats.sessionsCount} nouvelle(s) séance(s) et ${stats.exercisesCount} nouvel(s) exercice(s) ajouté(s).`
+          : `${stats.sessionsCount} séance(s) et ${stats.exercisesCount} exercice(s) importé(s).`;
 
-      Alert.alert("Import termine", message, [
-        {
-          text: "OK",
-          onPress: () => router.replace("/"),
-        },
+      Alert.alert("Import terminé", message, [
+        { text: "OK", onPress: () => router.replace("/") },
       ]);
     } catch (error) {
       Alert.alert("Erreur d'import", (error as Error).message);
@@ -141,87 +231,207 @@ export default function SettingsScreen() {
 
   return (
     <Container>
-      <View className="flex-1 px-6 pt-4">
-        <View className="flex-row items-center justify-between mb-8">
-          <Pressable onPress={() => router.back()}>
-            <Text className="text-accent text-base">{"\u2190"} Retour</Text>
-          </Pressable>
-          <Pressable onPress={handleSave}>
-            <Text className="text-accent text-base font-semibold">
-              Enregistrer
-            </Text>
-          </Pressable>
-        </View>
-
-        <Text className="text-2xl font-bold text-textPrimary mb-6">
-          Parametres
-        </Text>
-
-        <Text className="text-sm text-textSecondary mb-2">Prenom</Text>
-        <TextInput
-          value={name}
-          onChangeText={setName}
-          placeholder="Ton prenom"
-          autoFocus
-          className="bg-fill rounded-xl px-4 h-input text-base text-textPrimary"
-          placeholderTextColor={colors.textTertiary}
-        />
-
-        <Text className="text-sm text-textSecondary mb-3 mt-6">
-          Couleur d'accent
-        </Text>
-        <View className="flex-row flex-wrap gap-3">
-          {ACCENT_KEYS.map((key) => {
-            const color = ACCENT_PRESETS[key][isDark ? "dark" : "light"];
-            const isActive = key === accentKey;
-            return (
-              <Pressable
-                key={key}
-                onPress={() => handleAccentChange(key)}
-                style={{ backgroundColor: color }}
-                className="w-10 h-10 rounded-full items-center justify-center"
+      <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+        <View className="px-5 pt-2 pb-12">
+          {/* ─── Header ─── */}
+          <Animated.View
+            entering={FadeInDown.duration(400)}
+            className="flex-row items-center justify-between mb-2"
+          >
+            <Pressable
+              onPress={() => router.back()}
+              className="flex-row items-center py-2"
+            >
+              <Ionicons
+                name="chevron-back"
+                size={22}
+                color={colors.accent}
+              />
+              <Text
+                className="text-base ml-0.5"
+                style={{ color: colors.accent }}
               >
-                {isActive && (
-                  <Text className="text-white text-base font-bold">
-                    {"\u2713"}
-                  </Text>
-                )}
-              </Pressable>
-            );
-          })}
-        </View>
+                Retour
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={handleSave}
+              className="py-2 px-4 rounded-full"
+              style={{ backgroundColor: colors.accent + "15" }}
+            >
+              <Text
+                className="text-sm font-bold"
+                style={{ color: colors.accent }}
+              >
+                Enregistrer
+              </Text>
+            </Pressable>
+          </Animated.View>
 
-        <Text className="text-sm text-textSecondary mb-3 mt-8">
-          Donnees
-        </Text>
-        <View className="gap-3">
-          <Pressable
-            onPress={handleExport}
-            disabled={exporting}
-            className="bg-fill rounded-xl px-4 py-4 active:opacity-80"
-          >
-            <Text className="text-textPrimary text-base">
-              {exporting ? "Export en cours..." : "Exporter mes donnees"}
+          <Animated.View entering={FadeInDown.duration(400).delay(50)}>
+            <Text className="text-3xl font-bold text-textPrimary mb-1">
+              Paramètres
             </Text>
-            <Text className="text-textTertiary text-xs mt-1">
-              Sauvegarde JSON de toutes tes seances
+            <Text className="text-sm text-textSecondary">
+              Personnalise ton expérience
             </Text>
-          </Pressable>
+          </Animated.View>
 
-          <Pressable
-            onPress={handleImport}
-            disabled={importing}
-            className="bg-fill rounded-xl px-4 py-4 active:opacity-80"
-          >
-            <Text className="text-textPrimary text-base">
-              {importing ? "Import en cours..." : "Importer des donnees"}
-            </Text>
-            <Text className="text-textTertiary text-xs mt-1">
-              Depuis un fichier JSON exporte
-            </Text>
-          </Pressable>
+          {/* ─── Profil ─── */}
+          <SectionHeader title="Profil" delay={100} />
+          <Animated.View entering={FadeInDown.duration(400).delay(150)}>
+            <Card variant="elevated">
+              <Text className="text-xs font-semibold text-textTertiary tracking-wide uppercase mb-2">
+                Prénom
+              </Text>
+              <View className="flex-row items-center">
+                <View
+                  style={[
+                    styles.rowIcon,
+                    { backgroundColor: colors.accent + "15" },
+                  ]}
+                >
+                  <Ionicons
+                    name="person"
+                    size={18}
+                    color={colors.accent}
+                  />
+                </View>
+                <TextInput
+                  value={name}
+                  onChangeText={setName}
+                  placeholder="Ton prénom"
+                  className="flex-1 ml-3 text-base text-textPrimary bg-fill rounded-xl px-4 h-input"
+                  placeholderTextColor={colors.textTertiary}
+                />
+              </View>
+            </Card>
+          </Animated.View>
+
+          {/* ─── Apparence ─── */}
+          <SectionHeader title="Apparence" delay={200} />
+          <Animated.View entering={FadeInDown.duration(400).delay(250)}>
+            <Card variant="elevated">
+              <Text className="text-xs font-semibold text-textTertiary tracking-wide uppercase mb-4">
+                Couleur d'accent
+              </Text>
+              <View className="flex-row flex-wrap gap-3">
+                {ACCENT_KEYS.map((key) => {
+                  const color =
+                    ACCENT_PRESETS[key][isDark ? "dark" : "light"];
+                  const isActive = key === accentKey;
+
+                  return (
+                    <Pressable
+                      key={key}
+                      onPress={() => handleAccentChange(key)}
+                      className="items-center"
+                    >
+                      <View
+                        style={[
+                          styles.colorSwatch,
+                          {
+                            backgroundColor: color,
+                            ...(isActive
+                              ? {
+                                shadowColor: color,
+                                shadowOpacity: 0.5,
+                                shadowRadius: 8,
+                                shadowOffset: { width: 0, height: 2 },
+                                elevation: 6,
+                              }
+                              : {}),
+                          },
+                        ]}
+                      >
+                        {isActive && (
+                          <Ionicons
+                            name="checkmark"
+                            size={20}
+                            color="#fff"
+                          />
+                        )}
+                      </View>
+                      <Text
+                        className="text-xs mt-1.5"
+                        style={{
+                          color: isActive
+                            ? colors.textPrimary
+                            : colors.textTertiary,
+                          fontWeight: isActive ? "600" : "400",
+                        }}
+                      >
+                        {ACCENT_LABELS[key]}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </Card>
+          </Animated.View>
+
+          {/* ─── Données ─── */}
+          <SectionHeader title="Données" delay={300} />
+          <Animated.View entering={FadeInDown.duration(400).delay(350)}>
+            <Card variant="elevated">
+              <SettingsRow
+                icon="cloud-upload-outline"
+                label={
+                  exporting ? "Export en cours..." : "Exporter mes données"
+                }
+                subtitle="Sauvegarde JSON de toutes tes séances"
+                onPress={handleExport}
+                disabled={exporting}
+              />
+              <View
+                className="h-px mx-1"
+                style={{ backgroundColor: colors.separator }}
+              />
+              <SettingsRow
+                icon="cloud-download-outline"
+                label={
+                  importing ? "Import en cours..." : "Importer des données"
+                }
+                subtitle="Depuis un fichier JSON exporté"
+                onPress={handleImport}
+                disabled={importing}
+              />
+            </Card>
+          </Animated.View>
+
+          {/* ─── À propos ─── */}
+          <SectionHeader title="À propos" delay={400} />
+          <Animated.View entering={FadeInDown.duration(400).delay(450)}>
+            <Card>
+              <View className="items-center py-2">
+                <Text className="text-sm text-textTertiary">
+                  WorkoutTracker v1.0.0
+                </Text>
+                <Text className="text-xs text-textTertiary mt-1">
+                  Fait avec 💪 pour les sportifs
+                </Text>
+              </View>
+            </Card>
+          </Animated.View>
         </View>
-      </View>
+      </ScrollView>
     </Container>
   );
 }
+
+const styles = StyleSheet.create({
+  rowIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  colorSwatch: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+});

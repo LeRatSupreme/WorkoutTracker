@@ -10,6 +10,9 @@ module.exports = {
         background: "var(--color-background)",
         card: "var(--color-card)",
         cardBorder: "var(--color-card-border)",
+        cardHighlight: "var(--color-card-highlight)",
+        glow: "var(--color-glow)",
+        surface: "var(--color-surface)",
         textPrimary: "var(--color-text-primary)",
         textSecondary: "var(--color-text-secondary)",
         textTertiary: "var(--color-text-tertiary)",
@@ -21,6 +24,7 @@ module.exports = {
       },
       borderRadius: {
         pill: "28px",
+        "2.5xl": "20px",
       },
       height: {
         btn: "56px",

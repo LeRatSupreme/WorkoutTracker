@@ -1,5 +1,7 @@
-import { View, Text, Pressable, ScrollView } from "react-native";
+import { View, Text, Pressable } from "react-native";
+import Animated, { FadeIn } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
+import { useTheme } from "@/hooks/useTheme";
 import type { StatPeriod } from "@/db/queries/stats";
 
 const PERIODS: { value: StatPeriod; label: string }[] = [
@@ -17,28 +19,48 @@ interface PeriodSelectorProps {
 }
 
 export function PeriodSelector({ value, onChange }: PeriodSelectorProps) {
+  const { colors } = useTheme();
+
   return (
-    <View className="flex-row gap-2 mb-4">
-      {PERIODS.map((p) => (
-        <Pressable
-          key={p.value}
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            onChange(p.value);
-          }}
-          className={`flex-1 py-2 rounded-lg items-center ${
-            value === p.value ? "bg-accent" : "bg-fill"
-          }`}
-        >
-          <Text
-            className={`text-sm font-medium ${
-              value === p.value ? "text-white" : "text-textSecondary"
-            }`}
+    <Animated.View
+      entering={FadeIn.duration(400).delay(100)}
+      className="flex-row gap-1.5 mb-5 p-1 rounded-2xl"
+      style={{ backgroundColor: colors.fill }}
+    >
+      {PERIODS.map((p) => {
+        const isActive = value === p.value;
+        return (
+          <Pressable
+            key={p.value}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              onChange(p.value);
+            }}
+            className="flex-1 py-2.5 rounded-xl items-center"
+            style={
+              isActive
+                ? {
+                  backgroundColor: colors.accent,
+                  shadowColor: colors.accent,
+                  shadowOpacity: 0.3,
+                  shadowRadius: 6,
+                  shadowOffset: { width: 0, height: 2 },
+                  elevation: 4,
+                }
+                : {}
+            }
           >
-            {p.label}
-          </Text>
-        </Pressable>
-      ))}
-    </View>
+            <Text
+              className="text-sm font-semibold"
+              style={{
+                color: isActive ? "#fff" : colors.textSecondary,
+              }}
+            >
+              {p.label}
+            </Text>
+          </Pressable>
+        );
+      })}
+    </Animated.View>
   );
 }

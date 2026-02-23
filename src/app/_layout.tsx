@@ -42,6 +42,8 @@ export default function RootLayout() {
       Notifications.requestPermissionsAsync({
         ios: { allowAlert: true, allowSound: true },
       });
+    } else {
+      Notifications.requestPermissionsAsync();
     }
   }, []);
 

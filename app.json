@@ -22,7 +22,14 @@
       "expo-sqlite"
     ],
     "android": {
-      "package": "com.workout.tracker"
+      "package": "com.workout.tracker",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "permissions": [
+        "NOTIFICATIONS"
+      ]
     }
   }
 }

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { View, Text, TextInput, Pressable, StyleSheet } from "react-native";
+import { useTranslation } from "react-i18next";
 import { Card } from "@/components/ui/Card";
 import { SetRow } from "@/components/session/SetRow";
 import { SetInputForm } from "@/components/session/SetInputForm";
@@ -24,6 +25,7 @@ export function ActiveExerciseCard({
   onCommentChange,
   onWeightFactorChange,
 }: ActiveExerciseCardProps) {
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const { sets: lastPerf } = useLastPerformance(exercise.exercise.id);
   const lastSet = lastPerf.length > 0 ? lastPerf[0] : null;
@@ -55,7 +57,7 @@ export function ActiveExerciseCard({
               style={[cableStyles.segment, exercise.weight_factor !== 2.0 && [cableStyles.segmentActive, { backgroundColor: colors.card }]]}
             >
               <Text style={[cableStyles.label, { color: colors.textSecondary }, exercise.weight_factor !== 2.0 && { color: colors.textPrimary }]}>
-                Ancienne
+                {t("exercise.oldCable")}
               </Text>
             </Pressable>
             <Pressable
@@ -63,7 +65,7 @@ export function ActiveExerciseCard({
               style={[cableStyles.segment, exercise.weight_factor === 2.0 && [cableStyles.segmentActive, { backgroundColor: colors.card }]]}
             >
               <Text style={[cableStyles.label, { color: colors.textSecondary }, exercise.weight_factor === 2.0 && { color: colors.textPrimary }]}>
-                Nouvelle
+                {t("exercise.newCable")}
               </Text>
             </Pressable>
           </View>
@@ -73,7 +75,7 @@ export function ActiveExerciseCard({
           <TextInput
             value={exercise.comment ?? ""}
             onChangeText={(text) => onCommentChange(text || null)}
-            placeholder="Note sur cet exercice..."
+            placeholder={t("exercise.notePlaceholder")}
             multiline
             className="bg-fill rounded-xl px-4 py-2.5 text-sm text-textPrimary mb-3 border border-separator"
             placeholderTextColor={colors.textTertiary}

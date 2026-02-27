@@ -18,10 +18,12 @@ import {
 } from "@/db/queries/stats";
 import { WORKOUT_TYPE_LABELS } from "@/lib/utils";
 import type { WorkoutType } from "@/types";
+import { useTranslation } from "react-i18next";
 
 export default function SessionTypeStatsScreen() {
   const router = useRouter();
   const db = useSQLiteContext();
+  const { t } = useTranslation();
   const { type } = useLocalSearchParams<{ type: string }>();
   const [period, setPeriod] = useState<StatPeriod>("3M");
   const [stats, setStats] = useState<SessionTypeStats | null>(null);
@@ -66,7 +68,7 @@ export default function SessionTypeStatsScreen() {
     <Container>
       <View className="px-6 pt-4 pb-2">
         <Pressable onPress={() => router.back()}>
-          <Text className="text-accent text-base">← Retour</Text>
+          <Text className="text-accent text-base">{t("stats.back")}</Text>
         </Pressable>
       </View>
 
@@ -76,7 +78,7 @@ export default function SessionTypeStatsScreen() {
         </Text>
         {stats && (
           <Text className="text-sm text-textTertiary mb-4">
-            {stats.total_sessions} séance{stats.total_sessions > 1 ? "s" : ""} au total
+            {t("statsSessionType.sessionsTotal", { count: stats.total_sessions })}
           </Text>
         )}
 
@@ -86,26 +88,26 @@ export default function SessionTypeStatsScreen() {
           <>
             <View className="flex-row gap-3 mb-3">
               <StatCard
-                label="Séances"
+                label={t("statsSessionType.sessions")}
                 value={String(stats.total_sessions)}
               />
               <StatCard
-                label="Volume"
+                label={t("statsSessionType.volume")}
                 value={formatVolume(stats.total_volume)}
               />
             </View>
             <View className="flex-row gap-3 mb-6">
               <StatCard
-                label="Durée moy."
+                label={t("statsSessionType.avgDuration")}
                 value={String(stats.avg_duration_min)}
                 unit="min"
               />
               <StatCard
-                label="Fréquence"
+                label={t("statsSessionType.frequency")}
                 value={period === "1W"
-                  ? `${stats.total_sessions}/sem`
+                  ? `${stats.total_sessions}${t("statsSessionType.perWeek")}`
                   : period === "1M"
-                  ? `${(stats.total_sessions / 4).toFixed(1)}/sem`
+                  ? `${(stats.total_sessions / 4).toFixed(1)}${t("statsSessionType.perWeek")}`
                   : `${stats.total_sessions}`
                 }
               />
@@ -118,14 +120,14 @@ export default function SessionTypeStatsScreen() {
             data={durationChartData}
             metric="max_weight"
             unit="min"
-            label="Durée par séance (min)"
+            label={t("statsSessionType.durationPerSession")}
           />
         )}
 
         {topExercises.length > 0 && (
           <>
             <Text className="text-lg font-semibold text-textPrimary mb-3">
-              Exercices fréquents
+              {t("statsSessionType.frequentExercises")}
             </Text>
             {topExercises.map((ex, i) => (
               <Pressable
@@ -148,7 +150,7 @@ export default function SessionTypeStatsScreen() {
                     </Text>
                     {ex.max_weight > 0 && (
                       <Text className="text-xs text-textTertiary">
-                        Max: {ex.max_weight}kg
+                        {t("statsSessionType.max")} {ex.max_weight}kg
                       </Text>
                     )}
                   </View>

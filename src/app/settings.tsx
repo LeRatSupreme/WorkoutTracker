@@ -16,6 +16,7 @@ import * as DocumentPicker from "expo-document-picker";
 import * as Sharing from "expo-sharing";
 import { File, Paths } from "expo-file-system/next";
 import { useSQLiteContext } from "expo-sqlite";
+import { useTranslation } from "react-i18next";
 import { usePreferences } from "@/hooks/usePreferences";
 import { useTheme } from "@/hooks/useTheme";
 import { Container } from "@/components/ui/Container";
@@ -25,16 +26,7 @@ import { exportDatabase, importDatabase } from "@/lib/export-import";
 
 const ACCENT_KEYS = Object.keys(ACCENT_PRESETS) as AccentKey[];
 
-const ACCENT_LABELS: Record<AccentKey, string> = {
-  blue: "Bleu",
-  red: "Rouge",
-  purple: "Violet",
-  green: "Vert",
-  orange: "Orange",
-  pink: "Rose",
-  teal: "Sarcelle",
-  indigo: "Indigo",
-};
+
 
 interface SettingsRowProps {
   icon: keyof typeof Ionicons.glyphMap;
@@ -105,9 +97,10 @@ function SectionHeader({ title, delay = 0 }: { title: string; delay?: number }) 
 }
 
 export default function SettingsScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const db = useSQLiteContext();
-  const { firstName, setFirstName, accentKey, setAccentKey } =
+  const { firstName, setFirstName, accentKey, setAccentKey, language, setLanguage: setAppLanguage } =
     usePreferences();
   const { colors, isDark } = useTheme();
   const [name, setName] = useState("");
@@ -147,7 +140,7 @@ export default function SettingsScreen() {
       });
     } catch (error) {
       if ((error as Error).message?.includes("cancel")) return;
-      Alert.alert("Erreur", "Impossible d'exporter les données");
+      Alert.alert(t("settings.error"), t("settings.exportError"));
     } finally {
       setExporting(false);
     }
@@ -170,29 +163,29 @@ export default function SettingsScreen() {
       try {
         JSON.parse(json);
       } catch {
-        Alert.alert("Erreur", "Le fichier n'est pas un JSON valide");
+        Alert.alert(t("settings.error"), t("settings.invalidJSON"));
         return;
       }
 
       Alert.alert(
-        "Importer les données",
-        "Comment voulez-vous importer ?",
+        t("settings.importTitle"),
+        t("settings.importMessage"),
         [
           {
-            text: "Fusionner",
+            text: t("settings.merge"),
             onPress: () => doImport(json, "merge"),
           },
           {
-            text: "Tout remplacer",
+            text: t("settings.replaceAll"),
             style: "destructive",
             onPress: () => {
               Alert.alert(
-                "Confirmer le remplacement",
-                "Toutes vos données actuelles seront supprimées et remplacées.",
+                t("settings.confirmReplace"),
+                t("settings.confirmReplaceMessage"),
                 [
-                  { text: "Annuler", style: "cancel" },
+                  { text: t("settings.cancel"), style: "cancel" },
                   {
-                    text: "Remplacer",
+                    text: t("settings.replace"),
                     style: "destructive",
                     onPress: () => doImport(json, "replace"),
                   },
@@ -200,11 +193,11 @@ export default function SettingsScreen() {
               );
             },
           },
-          { text: "Annuler", style: "cancel" },
+          { text: t("settings.cancel"), style: "cancel" },
         ]
       );
     } catch (error) {
-      Alert.alert("Erreur", "Impossible de lire le fichier");
+      Alert.alert(t("settings.error"), t("settings.cannotReadFile"));
     }
   };
 
@@ -216,14 +209,14 @@ export default function SettingsScreen() {
 
       const message =
         mode === "merge"
-          ? `${stats.sessionsCount} nouvelle(s) séance(s) et ${stats.exercisesCount} nouvel(s) exercice(s) ajouté(s).`
-          : `${stats.sessionsCount} séance(s) et ${stats.exercisesCount} exercice(s) importé(s).`;
+          ? t("settings.importMergeResult", { sessions: stats.sessionsCount, exercises: stats.exercisesCount })
+          : t("settings.importReplaceResult", { sessions: stats.sessionsCount, exercises: stats.exercisesCount });
 
-      Alert.alert("Import terminé", message, [
-        { text: "OK", onPress: () => router.replace("/") },
+      Alert.alert(t("settings.importComplete"), message, [
+        { text: t("settings.ok"), onPress: () => router.replace("/") },
       ]);
     } catch (error) {
-      Alert.alert("Erreur d'import", (error as Error).message);
+      Alert.alert(t("settings.importError"), (error as Error).message);
     } finally {
       setImporting(false);
     }
@@ -251,7 +244,7 @@ export default function SettingsScreen() {
                 className="text-base ml-0.5"
                 style={{ color: colors.accent }}
               >
-                Retour
+                {t("settings.back")}
               </Text>
             </Pressable>
             <Pressable
@@ -263,26 +256,26 @@ export default function SettingsScreen() {
                 className="text-sm font-bold"
                 style={{ color: colors.accent }}
               >
-                Enregistrer
+                {t("settings.save")}
               </Text>
             </Pressable>
           </Animated.View>
 
           <Animated.View entering={FadeInDown.duration(400).delay(50)}>
             <Text className="text-3xl font-bold text-textPrimary mb-1">
-              Paramètres
+              {t("settings.title")}
             </Text>
             <Text className="text-sm text-textSecondary">
-              Personnalise ton expérience
+              {t("settings.subtitle")}
             </Text>
           </Animated.View>
 
           {/* ─── Profil ─── */}
-          <SectionHeader title="Profil" delay={100} />
+          <SectionHeader title={t("settings.profile")} delay={100} />
           <Animated.View entering={FadeInDown.duration(400).delay(150)}>
             <Card variant="elevated">
               <Text className="text-xs font-semibold text-textTertiary tracking-wide uppercase mb-2">
-                Prénom
+                {t("settings.firstName")}
               </Text>
               <View className="flex-row items-center">
                 <View
@@ -300,7 +293,7 @@ export default function SettingsScreen() {
                 <TextInput
                   value={name}
                   onChangeText={setName}
-                  placeholder="Ton prénom"
+                  placeholder={t("settings.firstNamePlaceholder")}
                   className="flex-1 ml-3 text-base text-textPrimary bg-fill rounded-xl px-4 h-input"
                   placeholderTextColor={colors.textTertiary}
                 />
@@ -309,11 +302,11 @@ export default function SettingsScreen() {
           </Animated.View>
 
           {/* ─── Apparence ─── */}
-          <SectionHeader title="Apparence" delay={200} />
+          <SectionHeader title={t("settings.appearance")} delay={200} />
           <Animated.View entering={FadeInDown.duration(400).delay(250)}>
             <Card variant="elevated">
               <Text className="text-xs font-semibold text-textTertiary tracking-wide uppercase mb-4">
-                Couleur d'accent
+                {t("settings.accentColor")}
               </Text>
               <View className="flex-row flex-wrap gap-3">
                 {ACCENT_KEYS.map((key) => {
@@ -361,7 +354,7 @@ export default function SettingsScreen() {
                           fontWeight: isActive ? "600" : "400",
                         }}
                       >
-                        {ACCENT_LABELS[key]}
+                        {t(`settings.accentColors.${key}`)}
                       </Text>
                     </Pressable>
                   );
@@ -370,16 +363,57 @@ export default function SettingsScreen() {
             </Card>
           </Animated.View>
 
+          {/* ─── Language ─── */}
+          <SectionHeader title={t("settings.language")} delay={275} />
+          <Animated.View entering={FadeInDown.duration(400).delay(300)}>
+            <Card variant="elevated">
+              <View className="flex-row gap-3">
+                <Pressable
+                  onPress={() => setAppLanguage("fr")}
+                  className="flex-1 items-center py-3 rounded-xl"
+                  style={{
+                    backgroundColor: language === "fr" ? colors.accent + "20" : colors.fill,
+                    borderWidth: language === "fr" ? 1.5 : 0,
+                    borderColor: language === "fr" ? colors.accent : "transparent",
+                  }}
+                >
+                  <Text
+                    className="text-sm font-semibold"
+                    style={{ color: language === "fr" ? colors.accent : colors.textSecondary }}
+                  >
+                    {t("settings.languageFrench")}
+                  </Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => setAppLanguage("en")}
+                  className="flex-1 items-center py-3 rounded-xl"
+                  style={{
+                    backgroundColor: language === "en" ? colors.accent + "20" : colors.fill,
+                    borderWidth: language === "en" ? 1.5 : 0,
+                    borderColor: language === "en" ? colors.accent : "transparent",
+                  }}
+                >
+                  <Text
+                    className="text-sm font-semibold"
+                    style={{ color: language === "en" ? colors.accent : colors.textSecondary }}
+                  >
+                    {t("settings.languageEnglish")}
+                  </Text>
+                </Pressable>
+              </View>
+            </Card>
+          </Animated.View>
+
           {/* ─── Données ─── */}
-          <SectionHeader title="Données" delay={300} />
-          <Animated.View entering={FadeInDown.duration(400).delay(350)}>
+          <SectionHeader title={t("settings.data")} delay={350} />
+          <Animated.View entering={FadeInDown.duration(400).delay(400)}>
             <Card variant="elevated">
               <SettingsRow
                 icon="cloud-upload-outline"
                 label={
-                  exporting ? "Export en cours..." : "Exporter mes données"
+                  exporting ? t("settings.exporting") : t("settings.exportData")
                 }
-                subtitle="Sauvegarde JSON de toutes tes séances"
+                subtitle={t("settings.exportSubtitle")}
                 onPress={handleExport}
                 disabled={exporting}
               />
@@ -390,9 +424,9 @@ export default function SettingsScreen() {
               <SettingsRow
                 icon="cloud-download-outline"
                 label={
-                  importing ? "Import en cours..." : "Importer des données"
+                  importing ? t("settings.importing") : t("settings.importData")
                 }
-                subtitle="Depuis un fichier JSON exporté"
+                subtitle={t("settings.importSubtitle")}
                 onPress={handleImport}
                 disabled={importing}
               />
@@ -400,15 +434,15 @@ export default function SettingsScreen() {
           </Animated.View>
 
           {/* ─── À propos ─── */}
-          <SectionHeader title="À propos" delay={400} />
-          <Animated.View entering={FadeInDown.duration(400).delay(450)}>
+          <SectionHeader title={t("settings.about")} delay={450} />
+          <Animated.View entering={FadeInDown.duration(400).delay(500)}>
             <Card>
               <View className="items-center py-2">
                 <Text className="text-sm text-textTertiary">
-                  WorkoutTracker v1.0.0
+                  {t("settings.aboutVersion")}
                 </Text>
                 <Text className="text-xs text-textTertiary mt-1">
-                  Fait avec 💪 pour les sportifs
+                  {t("settings.aboutMadeWith")}
                 </Text>
               </View>
             </Card>

@@ -1,4 +1,5 @@
 import { View, Text, Modal, Pressable, StyleSheet, Platform } from "react-native";
+import { useTranslation } from "react-i18next";
 import { GlassView, isLiquidGlassAvailable } from "expo-glass-effect";
 import * as Haptics from "expo-haptics";
 import { useRestTimer } from "@/hooks/useRestTimer";
@@ -39,6 +40,7 @@ const glassStyles = StyleSheet.create({
 });
 
 export function RestTimerModal({ visible, onClose }: RestTimerModalProps) {
+  const { t } = useTranslation();
   const { seconds, isRunning, start, skip } = useRestTimer();
 
   const handleClose = () => {
@@ -50,10 +52,10 @@ export function RestTimerModal({ visible, onClose }: RestTimerModalProps) {
     <>
       <View className="flex-row items-center justify-between mb-6">
         <Text className="text-xl font-bold text-textPrimary">
-          Timer de repos
+          {t("restTimer.title")}
         </Text>
         <Pressable onPress={handleClose}>
-          <Text className="text-accent text-base">Fermer</Text>
+          <Text className="text-accent text-base">{t("restTimer.close")}</Text>
         </Pressable>
       </View>
 
@@ -65,12 +67,12 @@ export function RestTimerModal({ visible, onClose }: RestTimerModalProps) {
           >
             {formatTimer(seconds)}
           </Text>
-          <Button title="Passer" variant="secondary" onPress={handleClose} />
+          <Button title={t("restTimer.skip")} variant="secondary" onPress={handleClose} />
         </View>
       ) : (
         <View>
           <Text className="text-base text-textSecondary mb-4">
-            Choisis la durée
+            {t("restTimer.chooseDuration")}
           </Text>
           <View className="flex-row gap-3">
             {DURATIONS.map(({ label, seconds: dur }) => (

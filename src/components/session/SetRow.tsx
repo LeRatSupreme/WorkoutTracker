@@ -1,4 +1,5 @@
 import { View, Text, Pressable } from "react-native";
+import { useTranslation } from "react-i18next";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { formatReps } from "@/lib/utils";
 import type { ActiveSet } from "@/store/session-store";
@@ -10,9 +11,10 @@ interface SetRowProps {
 }
 
 export function SetRow({ set, index, onRemove }: SetRowProps) {
+  const { t } = useTranslation();
   return (
     <View className="flex-row items-center py-2 border-b border-separator">
-      <Text className="text-sm text-textTertiary w-10">S{index + 1}</Text>
+      <Text className="text-sm text-textTertiary w-10">{t("exercise.setPrefix")}{index + 1}</Text>
       <Text className="text-base font-medium text-textPrimary flex-1">
         {set.weight}kg × {formatReps(set.reps)}
       </Text>

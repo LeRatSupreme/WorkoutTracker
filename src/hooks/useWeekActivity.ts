@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useSQLiteContext } from "expo-sqlite";
+import { useTranslation } from "react-i18next";
 
 export interface WeekDay {
   label: string;
@@ -8,7 +9,7 @@ export interface WeekDay {
   isToday: boolean;
 }
 
-const DAY_LABELS = ["L", "M", "Me", "J", "V", "S", "D"];
+const DAY_KEYS = ["days.mon", "days.tue", "days.wed", "days.thu", "days.fri", "days.sat", "days.sun"];
 
 function toLocalDateStr(d: Date): string {
   const year = d.getFullYear();
@@ -28,6 +29,7 @@ function getMonday(date: Date): Date {
 
 export function useWeekActivity() {
   const db = useSQLiteContext();
+  const { t } = useTranslation();
   const [days, setDays] = useState<WeekDay[]>([]);
   const [sessionCount, setSessionCount] = useState(0);
   const [daysSinceLastSession, setDaysSinceLastSession] = useState<number | null>(null);
@@ -57,7 +59,7 @@ export function useWeekActivity() {
       d.setDate(d.getDate() + i);
       const dateStr = toLocalDateStr(d);
       weekDays.push({
-        label: DAY_LABELS[i],
+        label: t(DAY_KEYS[i]),
         date: dateStr,
         hasSession: sessionDates.has(dateStr),
         isToday: dateStr === todayStr,
@@ -83,7 +85,7 @@ export function useWeekActivity() {
     }
 
     setLoading(false);
-  }, [db]);
+  }, [db, t]);
 
   useEffect(() => {
     refresh();

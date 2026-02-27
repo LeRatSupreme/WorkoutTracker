@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { View, Text, ScrollView, Alert, KeyboardAvoidingView, Platform, Pressable, LayoutAnimation } from "react-native";
 import { useRouter } from "expo-router";
 import { useSQLiteContext } from "expo-sqlite";
+import { useTranslation } from "react-i18next";
 import { useSessionStore } from "@/store/session-store";
 import { addSet, removeSet, updateComment, updateWeightFactor, createExerciseLog, deleteExerciseLog, getSuggestedExercises, deleteSession } from "@/db";
 import { useElapsedTimer } from "@/hooks/useElapsedTimer";
@@ -16,6 +17,7 @@ import type { SetStatus, Exercise } from "@/types";
 export default function ActiveSessionScreen() {
   const router = useRouter();
   const db = useSQLiteContext();
+  const { t } = useTranslation();
   const sessionId = useSessionStore((s) => s.sessionId);
   const sessionType = useSessionStore((s) => s.sessionType);
   const sessionLabel = useSessionStore((s) => s.sessionLabel);
@@ -99,12 +101,12 @@ export default function ActiveSessionScreen() {
 
   const handleRemoveExercise = (logId: string, exerciseName: string) => {
     Alert.alert(
-      `Retirer "${exerciseName}" ?`,
-      "L'exercice et ses séries seront supprimés de cette séance.",
+      t("session.removeExerciseTitle", { name: exerciseName }),
+      t("session.removeExerciseMessage"),
       [
-        { text: "Annuler", style: "cancel" },
+        { text: t("session.cancel"), style: "cancel" },
         {
-          text: "Retirer",
+          text: t("session.remove"),
           style: "destructive",
           onPress: async () => {
             await deleteExerciseLog(db, logId);
@@ -118,12 +120,12 @@ export default function ActiveSessionScreen() {
 
   const handleAbandon = () => {
     Alert.alert(
-      "Abandonner la séance ?",
-      "Toutes les données de cette séance seront perdues.",
+      t("session.abandonTitle"),
+      t("session.abandonMessage"),
       [
-        { text: "Annuler", style: "cancel" },
+        { text: t("session.cancel"), style: "cancel" },
         {
-          text: "Abandonner",
+          text: t("session.abandon"),
           style: "destructive",
           onPress: async () => {
             if (sessionId) await deleteSession(db, sessionId);
@@ -138,20 +140,20 @@ export default function ActiveSessionScreen() {
   const handleFinish = () => {
     if (exercises.length === 0) {
       Alert.alert(
-        "Seance vide",
-        "Ajoute au moins un exercice avant de terminer.",
+        t("session.emptySessionTitle"),
+        t("session.emptySessionMessage"),
       );
       return;
     }
 
     const totalSets = exercises.reduce((sum, ex) => sum + ex.sets.length, 0);
     const durationMin = Math.floor((Date.now() - new Date(startedAt!).getTime()) / 60000);
-    const summary = `Tu as fait ${exercises.length} exercice${exercises.length > 1 ? "s" : ""} et ${totalSets} serie${totalSets > 1 ? "s" : ""} en ${durationMin}min.`;
+    const summary = t("session.finishMessage", { exercises: exercises.length, sets: totalSets, duration: durationMin });
 
-    Alert.alert("Terminer la seance ?", summary, [
-      { text: "Annuler", style: "cancel" },
+    Alert.alert(t("session.finishTitle"), summary, [
+      { text: t("session.cancel"), style: "cancel" },
       {
-        text: "Terminer",
+        text: t("session.finish"),
         onPress: () => router.replace("/session/recap"),
       },
     ]);
@@ -166,13 +168,13 @@ export default function ActiveSessionScreen() {
         <View className="px-6 pt-4 pb-2 flex-row items-center justify-between">
           <View>
             <Text className="text-xl font-bold text-textPrimary">
-              {sessionLabel || (sessionType ? WORKOUT_TYPE_LABELS[sessionType] : "Seance")}
+              {sessionLabel || (sessionType ? WORKOUT_TYPE_LABELS[sessionType] : t("session.fallbackLabel"))}
             </Text>
             {elapsed ? (
               <Text className="text-sm text-textSecondary mt-0.5">{elapsed}</Text>
             ) : null}
           </View>
-          <Button title="Terminer" variant="secondary" onPress={handleFinish} />
+          <Button title={t("session.finish")} variant="secondary" onPress={handleFinish} />
         </View>
 
         <ScrollView className="flex-1 px-6" keyboardShouldPersistTaps="handled">
@@ -194,13 +196,13 @@ export default function ActiveSessionScreen() {
           ) : (
             <View className="items-center justify-center py-16">
               <Text className="text-textTertiary text-base mb-4">
-                Aucun exercice ajoute pour l'instant.
+                {t("session.noExercises")}
               </Text>
 
               {filteredSuggestions.length > 0 && (
                 <View className="w-full mt-2">
                   <Text className="text-sm font-medium text-textSecondary mb-2 text-center">
-                    Suggestions
+                    {t("session.suggestions")}
                   </Text>
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mx-[-24px] px-6">
                     <View className="flex-row gap-2">
@@ -223,7 +225,7 @@ export default function ActiveSessionScreen() {
           {currentExercise && currentExercise.sets.length > 0 && (
             <View className="mt-4">
               <Button
-                title="Repos"
+                title={t("session.rest")}
                 variant="secondary"
                 fullWidth
                 onPress={() => setTimerVisible(true)}
@@ -235,7 +237,7 @@ export default function ActiveSessionScreen() {
           {currentExercise && filteredSuggestions.length > 0 && (
             <View className="mt-4">
               <Text className="text-sm font-medium text-textSecondary mb-2">
-                Suggestions
+                {t("session.suggestions")}
               </Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                 <View className="flex-row gap-2">
@@ -255,7 +257,7 @@ export default function ActiveSessionScreen() {
 
           <View className="mt-4 mb-4">
             <Button
-              title="+ Ajouter un exercice"
+              title={t("session.addExercise")}
               variant="secondary"
               fullWidth
               onPress={() => router.push("/session/exercise-picker")}
@@ -263,7 +265,7 @@ export default function ActiveSessionScreen() {
           </View>
 
           <Pressable onPress={handleAbandon} className="items-center mb-8">
-            <Text className="text-sm text-destructive">Abandonner la séance</Text>
+            <Text className="text-sm text-destructive">{t("session.abandonSession")}</Text>
           </Pressable>
         </ScrollView>
       </KeyboardAvoidingView>

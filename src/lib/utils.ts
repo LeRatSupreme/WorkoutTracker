@@ -1,4 +1,5 @@
 import * as Crypto from "expo-crypto";
+import i18n from "@/i18n";
 import type { MuscleGroup, WorkoutType } from "@/types";
 
 export function generateId(): string {
@@ -20,7 +21,8 @@ export function formatDuration(startedAt: string, finishedAt?: string | null): s
 
 export function formatDate(isoDate: string): string {
   const date = new Date(isoDate);
-  return date.toLocaleDateString("fr-FR", {
+  const locale = i18n.language === "fr" ? "fr-FR" : "en-US";
+  return date.toLocaleDateString(locale, {
     weekday: "short",
     day: "numeric",
     month: "short",
@@ -46,23 +48,29 @@ export const STATUS_EMOJI: Record<string, string> = {
   fail: "🟥",
 };
 
-export const MUSCLE_GROUPS: { value: MuscleGroup; label: string }[] = [
-  { value: "pecs", label: "Pecs" },
-  { value: "triceps", label: "Triceps" },
-  { value: "epaules", label: "Épaules" },
-  { value: "dos", label: "Dos" },
-  { value: "biceps", label: "Biceps" },
-  { value: "jambes", label: "Jambes" },
-];
-
-export const MUSCLE_GROUP_LABELS: Record<MuscleGroup, string> = {
-  pecs: "Pecs",
-  triceps: "Triceps",
-  epaules: "Épaules",
-  dos: "Dos",
-  biceps: "Biceps",
-  jambes: "Jambes",
+const MUSCLE_GROUP_I18N: Record<MuscleGroup, string> = {
+  pecs: "muscleGroups.chest",
+  triceps: "muscleGroups.triceps",
+  epaules: "muscleGroups.shoulders",
+  dos: "muscleGroups.back",
+  biceps: "muscleGroups.biceps",
+  jambes: "muscleGroups.legs",
 };
+
+export function getMuscleGroups(): { value: MuscleGroup; label: string }[] {
+  return [
+    { value: "pecs", label: i18n.t("muscleGroups.chest") },
+    { value: "triceps", label: i18n.t("muscleGroups.triceps") },
+    { value: "epaules", label: i18n.t("muscleGroups.shoulders") },
+    { value: "dos", label: i18n.t("muscleGroups.back") },
+    { value: "biceps", label: i18n.t("muscleGroups.biceps") },
+    { value: "jambes", label: i18n.t("muscleGroups.legs") },
+  ];
+}
+
+export function getMuscleGroupLabel(group: MuscleGroup): string {
+  return i18n.t(MUSCLE_GROUP_I18N[group]);
+}
 
 export const SESSION_MUSCLE_MAPPING: Record<WorkoutType, MuscleGroup[]> = {
   push: ["pecs", "triceps", "epaules"],
@@ -81,13 +89,13 @@ export function timeAgo(isoDate: string): string {
   const diffMs = now - then;
   const diffDays = Math.floor(diffMs / 86400000);
 
-  if (diffDays === 0) return "aujourd'hui";
-  if (diffDays === 1) return "hier";
-  if (diffDays < 7) return `il y a ${diffDays} jours`;
+  if (diffDays === 0) return i18n.t("timeAgo.today");
+  if (diffDays === 1) return i18n.t("timeAgo.yesterday");
+  if (diffDays < 7) return i18n.t("timeAgo.daysAgo", { count: diffDays });
   const weeks = Math.floor(diffDays / 7);
-  if (weeks === 1) return "il y a 1 semaine";
-  if (weeks < 4) return `il y a ${weeks} semaines`;
+  if (weeks === 1) return i18n.t("timeAgo.oneWeekAgo");
+  if (weeks < 4) return i18n.t("timeAgo.weeksAgo", { count: weeks });
   const months = Math.floor(diffDays / 30);
-  if (months === 1) return "il y a 1 mois";
-  return `il y a ${months} mois`;
+  if (months === 1) return i18n.t("timeAgo.oneMonthAgo");
+  return i18n.t("timeAgo.monthsAgo", { count: months });
 }

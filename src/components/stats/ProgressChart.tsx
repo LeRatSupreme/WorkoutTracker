@@ -3,6 +3,7 @@ import { View, Text, Pressable } from "react-native";
 import Svg, { Path, Defs, LinearGradient as SvgGradient, Stop, Circle } from "react-native-svg";
 import { Card } from "@/components/ui/Card";
 import { useTheme } from "@/hooks/useTheme";
+import { useTranslation } from "react-i18next";
 import type { ExerciseProgressPoint } from "@/db/queries/stats";
 import { formatDate } from "@/lib/utils";
 
@@ -59,11 +60,12 @@ export function ProgressChart({ data, metric, label, unit }: ProgressChartProps)
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [chartWidth, setChartWidth] = useState(0);
   const { colors } = useTheme();
+  const { t } = useTranslation();
 
   if (data.length === 0) {
     return (
       <Card className="mb-4">
-        <Text className="text-sm text-textTertiary">Pas assez de donnees</Text>
+        <Text className="text-sm text-textTertiary">{t("stats.notEnoughData")}</Text>
       </Card>
     );
   }

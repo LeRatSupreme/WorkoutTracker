@@ -3,6 +3,7 @@ import Animated, {
   FadeInDown,
   FadeIn,
 } from "react-native-reanimated";
+import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "@/hooks/useTheme";
 import type { WeekDay } from "@/hooks/useWeekActivity";
@@ -13,13 +14,14 @@ interface WeekGridProps {
 }
 
 export function WeekGrid({ days, sessionCount }: WeekGridProps) {
+  const { t } = useTranslation();
   const { colors } = useTheme();
 
   return (
     <Animated.View entering={FadeInDown.duration(500).delay(200)}>
       <View className="flex-row items-center justify-between mb-4">
         <Text className="text-sm font-semibold text-textSecondary tracking-wide uppercase">
-          Cette semaine
+          {t("home.thisWeek")}
         </Text>
         <View
           className="px-2.5 py-1 rounded-full"
@@ -89,10 +91,10 @@ export function WeekGrid({ days, sessionCount }: WeekGridProps) {
 
       <Text className="text-xs text-textTertiary mt-3 text-center">
         {sessionCount === 0
-          ? "Commence ta première séance !"
+          ? t("home.firstSession")
           : sessionCount === 1
-            ? "1 séance — bon début 💪"
-            : `${sessionCount} séances — continue comme ça 🔥`}
+            ? t("home.oneSession")
+            : t("home.multipleSessions", { count: sessionCount })}
       </Text>
     </Animated.View>
   );

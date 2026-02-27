@@ -1,4 +1,5 @@
 import { View, Text } from "react-native";
+import { useTranslation } from "react-i18next";
 import { Card } from "@/components/ui/Card";
 import type { LastPerformanceSet } from "@/types";
 import { STATUS_EMOJI, formatReps, timeAgo } from "@/lib/utils";
@@ -8,11 +9,12 @@ interface LastPerformanceCardProps {
 }
 
 export function LastPerformanceCard({ sets }: LastPerformanceCardProps) {
+  const { t } = useTranslation();
   if (sets.length === 0) {
     return (
       <Card className="mb-4">
         <Text className="text-sm text-textTertiary">
-          Première fois sur cet exercice
+          {t("exercise.firstTime")}
         </Text>
       </Card>
     );
@@ -33,7 +35,7 @@ export function LastPerformanceCard({ sets }: LastPerformanceCardProps) {
   return (
     <Card className="mb-4">
       <View className="flex-row items-center justify-between mb-2">
-        <Text className="text-sm text-textSecondary">Dernière fois</Text>
+        <Text className="text-sm text-textSecondary">{t("exercise.lastTime")}</Text>
         {sessionDate && (
           <Text className="text-xs text-textTertiary">{timeAgo(sessionDate)}</Text>
         )}
@@ -46,7 +48,7 @@ export function LastPerformanceCard({ sets }: LastPerformanceCardProps) {
         return (
           <View key={s.order} className="flex-row items-center py-1">
             <Text className={`text-xs w-8 ${isBest ? "font-semibold text-warning" : "text-textTertiary"}`}>
-              {isBest ? "PR" : `S${s.order}`}
+              {isBest ? t("exercise.pr") : `${t("exercise.setPrefix")}${s.order}`}
             </Text>
             <Text className="text-sm font-medium text-textPrimary flex-1">
               {s.weight}kg × {formatReps(s.reps)}

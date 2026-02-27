@@ -18,6 +18,7 @@ import { getGreeting, getMotivationMessage } from "@/lib/greeting";
 import { WORKOUT_TYPE_LABELS } from "@/lib/utils";
 import { useElapsedTimer } from "@/hooks/useElapsedTimer";
 import { useTheme } from "@/hooks/useTheme";
+import { useTranslation } from "react-i18next";
 import {
   getUnfinishedSession,
   getSessionWithDetails,
@@ -56,6 +57,7 @@ export default function HomeScreen() {
   const restoreSession = useSessionStore((s) => s.restoreSession);
   const endSession = useSessionStore((s) => s.endSession);
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const checkedRef = useRef(false);
   const elapsed = useElapsedTimer(startedAt);
   const [lastSession, setLastSession] = useState<LastFinishedSession | null>(
@@ -71,15 +73,15 @@ export default function HomeScreen() {
     loadLastSession();
   }, [loadLastSession]);
 
-  const greeting = useMemo(() => getGreeting(firstName), [firstName]);
+  const greeting = useMemo(() => getGreeting(firstName, t), [firstName, t]);
   const emoji = useMemo(() => getTimeEmoji(), []);
   const motivation = useMemo(
     () =>
       getMotivationMessage({
         sessionsThisWeek: sessionCount,
         daysSinceLastSession,
-      }),
-    [sessionCount, daysSinceLastSession]
+      }, t),
+    [sessionCount, daysSinceLastSession, t]
   );
 
   // Vérifier s'il y a une séance non terminée au mount
@@ -92,18 +94,18 @@ export default function HomeScreen() {
       if (!unfinished) return;
 
       Alert.alert(
-        "Séance non terminée",
-        "Une séance est restée ouverte. Que veux-tu faire ?",
+        t("home.unfinishedTitle"),
+        t("home.unfinishedMessage"),
         [
           {
-            text: "Supprimer",
+            text: t("home.delete"),
             style: "destructive",
             onPress: async () => {
               await deleteSession(db, unfinished.id);
             },
           },
           {
-            text: "Reprendre",
+            text: t("home.resume"),
             onPress: async () => {
               const details = await getSessionWithDetails(db, unfinished.id);
               if (details) {
@@ -165,7 +167,7 @@ export default function HomeScreen() {
                   className="text-xs font-bold tracking-wide uppercase ml-2"
                   style={{ color: colors.accent }}
                 >
-                  Séance en cours
+                  {t("home.activeSession")}
                 </Text>
               </View>
               <Text className="text-lg font-bold text-textPrimary mb-0.5">
@@ -177,7 +179,7 @@ export default function HomeScreen() {
               <View className="flex-row gap-3">
                 <View className="flex-1">
                   <Button
-                    title="Reprendre"
+                    title={t("home.resume")}
                     onPress={() => router.push("/session/active")}
                     fullWidth
                     icon={
@@ -188,12 +190,12 @@ export default function HomeScreen() {
                 <Pressable
                   onPress={() => {
                     Alert.alert(
-                      "Abandonner la séance ?",
-                      "Toutes les données de cette séance seront perdues.",
+                      t("home.abandonTitle"),
+                      t("home.abandonMessage"),
                       [
-                        { text: "Annuler", style: "cancel" },
+                        { text: t("home.cancel"), style: "cancel" },
                         {
-                          text: "Abandonner",
+                          text: t("home.abandon"),
                           style: "destructive",
                           onPress: async () => {
                             await deleteSession(db, sessionId);
@@ -255,13 +257,13 @@ export default function HomeScreen() {
                     style={{ marginRight: 8 }}
                   />
                   <Text className="text-base font-bold text-accent">
-                    Commencer une séance
+                    {t("home.startSession")}
                   </Text>
                 </GlassView>
               </Pressable>
             ) : (
               <Button
-                title="Commencer une séance"
+                title={t("home.startSession")}
                 onPress={() => router.push("/session/start")}
                 fullWidth
                 icon={<Ionicons name="flash" size={18} color="#fff" />}

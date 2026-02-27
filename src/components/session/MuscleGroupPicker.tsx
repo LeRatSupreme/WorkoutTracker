@@ -1,8 +1,18 @@
 import { useState } from "react";
 import { View, Text, Modal, Pressable, Switch } from "react-native";
-import { MUSCLE_GROUPS } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
+import { getMuscleGroups } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
 import type { MuscleGroup } from "@/types";
+
+const MUSCLE_GROUP_I18N_KEYS: Record<MuscleGroup, string> = {
+  pecs: "chest",
+  triceps: "triceps",
+  epaules: "shoulders",
+  dos: "back",
+  biceps: "biceps",
+  jambes: "legs",
+};
 
 interface MuscleGroupPickerProps {
   visible: boolean;
@@ -19,6 +29,7 @@ export function MuscleGroupPicker({
   onConfirm,
   onCancel,
 }: MuscleGroupPickerProps) {
+  const { t } = useTranslation();
   const [selected, setSelected] = useState<MuscleGroup | null>(defaultValue ?? null);
   const [isCable, setIsCable] = useState(false);
 
@@ -32,14 +43,14 @@ export function MuscleGroupPicker({
         <Pressable className="flex-1" onPress={onCancel} />
         <View className="bg-card rounded-t-3xl px-6 pt-6 pb-10 shadow-lg">
           <Text className="text-xl font-bold text-textPrimary mb-1">
-            Groupe musculaire
+            {t("exercise.muscleGroupTitle")}
           </Text>
           <Text className="text-sm text-textSecondary mb-5">
-            Pour "{exerciseName}"
+            {t("exercise.muscleGroupSubtitle", { name: exerciseName })}
           </Text>
 
           <View className="flex-row flex-wrap gap-3 mb-6">
-            {MUSCLE_GROUPS.map((mg) => (
+            {getMuscleGroups().map((mg) => (
               <Pressable
                 key={mg.value}
                 onPress={() => setSelected(mg.value)}
@@ -54,26 +65,26 @@ export function MuscleGroupPicker({
                     selected === mg.value ? "text-white" : "text-textPrimary"
                   }`}
                 >
-                  {mg.label}
+                  {t(`muscleGroups.${MUSCLE_GROUP_I18N_KEYS[mg.value]}`)}
                 </Text>
               </Pressable>
             ))}
           </View>
 
           <View className="flex-row items-center justify-between mb-4 bg-fill rounded-xl px-4 py-3">
-            <Text className="text-base text-textPrimary">Exercice a poulie</Text>
+            <Text className="text-base text-textPrimary">{t("exercise.cableExercise")}</Text>
             <Switch value={isCable} onValueChange={setIsCable} />
           </View>
 
           <View className="gap-3">
             <Button
-              title="Confirmer"
+              title={t("exercise.confirm")}
               onPress={handleConfirm}
               disabled={!selected}
               fullWidth
             />
             <Button
-              title="Annuler"
+              title={t("common.cancel")}
               variant="secondary"
               onPress={onCancel}
               fullWidth

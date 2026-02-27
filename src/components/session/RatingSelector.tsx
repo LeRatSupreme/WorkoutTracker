@@ -1,4 +1,5 @@
 import { View, Text, Pressable } from "react-native";
+import { useTranslation } from "react-i18next";
 import * as Haptics from "expo-haptics";
 
 interface RatingSelectorProps {
@@ -9,15 +10,16 @@ interface RatingSelectorProps {
 const RATINGS = [1, 2, 3, 4, 5];
 
 export function RatingSelector({ value, onChange }: RatingSelectorProps) {
+  const { t } = useTranslation();
   return (
     <View>
       <Text className="text-base font-semibold text-textPrimary mb-3">
-        Difficulté ressentie
+        {t("rating.title")}
       </Text>
 
       <View className="flex-row items-center justify-between mb-2 px-1">
-        <Text className="text-xs text-textTertiary">Facile</Text>
-        <Text className="text-xs text-textTertiary">Intense</Text>
+        <Text className="text-xs text-textTertiary">{t("rating.easy")}</Text>
+        <Text className="text-xs text-textTertiary">{t("rating.intense")}</Text>
       </View>
 
       <View className="flex-row gap-2">

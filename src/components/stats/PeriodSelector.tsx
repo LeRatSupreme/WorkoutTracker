@@ -2,15 +2,16 @@ import { View, Text, Pressable } from "react-native";
 import Animated, { FadeIn } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
 import { useTheme } from "@/hooks/useTheme";
+import { useTranslation } from "react-i18next";
 import type { StatPeriod } from "@/db/queries/stats";
 
-const PERIODS: { value: StatPeriod; label: string }[] = [
-  { value: "1W", label: "1S" },
-  { value: "1M", label: "1M" },
-  { value: "3M", label: "3M" },
-  { value: "6M", label: "6M" },
-  { value: "1Y", label: "1A" },
-  { value: "ALL", label: "Tout" },
+const PERIODS: { value: StatPeriod; labelKey: string }[] = [
+  { value: "1W", labelKey: "period.1W" },
+  { value: "1M", labelKey: "period.1M" },
+  { value: "3M", labelKey: "period.3M" },
+  { value: "6M", labelKey: "period.6M" },
+  { value: "1Y", labelKey: "period.1Y" },
+  { value: "ALL", labelKey: "period.all" },
 ];
 
 interface PeriodSelectorProps {
@@ -20,6 +21,7 @@ interface PeriodSelectorProps {
 
 export function PeriodSelector({ value, onChange }: PeriodSelectorProps) {
   const { colors } = useTheme();
+  const { t } = useTranslation();
 
   return (
     <Animated.View
@@ -56,7 +58,7 @@ export function PeriodSelector({ value, onChange }: PeriodSelectorProps) {
                 color: isActive ? "#fff" : colors.textSecondary,
               }}
             >
-              {p.label}
+              {t(p.labelKey)}
             </Text>
           </Pressable>
         );

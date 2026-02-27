@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { View, Text, TextInput, Pressable } from "react-native";
+import { useTranslation } from "react-i18next";
 import * as Haptics from "expo-haptics";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { useTheme } from "@/hooks/useTheme";
@@ -13,6 +14,7 @@ interface SetInputFormProps {
 const STATUSES: SetStatus[] = ["success", "partial", "fail"];
 
 export function SetInputForm({ onAdd, lastPerformance }: SetInputFormProps) {
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const [weight, setWeight] = useState("");
   const [reps, setReps] = useState("");
@@ -48,7 +50,7 @@ export function SetInputForm({ onAdd, lastPerformance }: SetInputFormProps) {
     <View className="mt-3">
       <View className="flex-row gap-3 mb-3">
         <View className="flex-1">
-          <Text className="text-xs text-textSecondary mb-1">Poids (kg)</Text>
+          <Text className="text-xs text-textSecondary mb-1">{t("exercise.weightLabel")}</Text>
           <TextInput
             value={weight}
             onChangeText={setWeight}
@@ -59,7 +61,7 @@ export function SetInputForm({ onAdd, lastPerformance }: SetInputFormProps) {
           />
         </View>
         <View className="flex-1">
-          <Text className="text-xs text-textSecondary mb-1">Reps</Text>
+          <Text className="text-xs text-textSecondary mb-1">{t("exercise.repsLabel")}</Text>
           <TextInput
             value={reps}
             onChangeText={setReps}
@@ -109,7 +111,7 @@ export function SetInputForm({ onAdd, lastPerformance }: SetInputFormProps) {
           <Text
             className={`font-semibold ${isValid ? "text-white" : "text-textTertiary"}`}
           >
-            Ajouter
+            {t("exercise.add")}
           </Text>
         </Pressable>
       </View>

@@ -7,9 +7,18 @@ import {
   ScrollView,
   Animated,
   PanResponder,
+  Modal,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
+  StyleSheet,
 } from "react-native";
+import AnimatedRN, { FadeInDown } from "react-native-reanimated";
 import { useRouter } from "expo-router";
 import { useSQLiteContext } from "expo-sqlite";
+import { Ionicons } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
+import { useTranslation } from "react-i18next";
 import {
   createSession,
   getAllCustomTypes,
@@ -17,34 +26,41 @@ import {
   deleteCustomType,
 } from "@/db";
 import { Container } from "@/components/ui/Container";
+import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
 import { useSessionStore } from "@/store/session-store";
+import { useTheme } from "@/hooks/useTheme";
 import type { WorkoutType, CustomWorkoutType } from "@/types";
 
 const FIXED_TYPES: {
   type: WorkoutType;
   label: string;
-  emoji: string;
-  description: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  descriptionKey: string;
+  color: string;
 }[] = [
-  {
-    type: "push",
-    label: "Push",
-    emoji: "💪",
-    description: "Pectoraux, épaules, triceps",
-  },
-  {
-    type: "pull",
-    label: "Pull",
-    emoji: "🏋️",
-    description: "Dos, biceps, avant-bras",
-  },
-  {
-    type: "legs",
-    label: "Legs",
-    emoji: "🦵",
-    description: "Quadriceps, ischio-jambiers, mollets",
-  },
-];
+    {
+      type: "push",
+      label: "Push",
+      icon: "fitness",
+      descriptionKey: "workoutDescriptions.push",
+      color: "#FF6B6B",
+    },
+    {
+      type: "pull",
+      label: "Pull",
+      icon: "body",
+      descriptionKey: "workoutDescriptions.pull",
+      color: "#4ECDC4",
+    },
+    {
+      type: "legs",
+      label: "Legs",
+      icon: "walk",
+      descriptionKey: "workoutDescriptions.legs",
+      color: "#45B7D1",
+    },
+  ];
 
 function SwipeableCard({
   children,
@@ -92,10 +108,10 @@ function SwipeableCard({
   };
 
   return (
-    <View className="relative overflow-hidden rounded-2xl">
-      <View className="absolute right-0 top-0 bottom-0 w-20 bg-destructive justify-center items-center rounded-r-2xl">
+    <View className="relative overflow-hidden rounded-2.5xl">
+      <View className="absolute right-0 top-0 bottom-0 w-20 bg-destructive justify-center items-center rounded-r-2.5xl">
         <Pressable onPress={handleDeletePress} className="p-3">
-          <Text className="text-white font-semibold text-sm">Suppr.</Text>
+          <Ionicons name="trash-outline" size={20} color="#fff" />
         </Pressable>
       </View>
       <Animated.View
@@ -111,49 +127,49 @@ function SwipeableCard({
 export default function StartSessionScreen() {
   const router = useRouter();
   const db = useSQLiteContext();
+  const { colors } = useTheme();
+  const { t } = useTranslation();
   const startSession = useSessionStore((s) => s.startSession);
   const [customTypes, setCustomTypes] = useState<CustomWorkoutType[]>([]);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [newTypeName, setNewTypeName] = useState("");
 
   useEffect(() => {
     getAllCustomTypes(db).then(setCustomTypes);
   }, [db]);
 
   const handleSelectFixed = async (type: WorkoutType) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     const session = await createSession(db, type);
     startSession(session.id, type, session.started_at);
     router.replace("/session/active");
   };
 
   const handleSelectCustom = async (customType: CustomWorkoutType) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     const session = await createSession(db, "custom", customType.name);
     startSession(session.id, "custom", session.started_at, customType.name);
     router.replace("/session/active");
   };
 
-  const handleCreateCustom = () => {
-    Alert.prompt(
-      "Nouveau type de séance",
-      "Donne un nom à ta séance",
-      async (name) => {
-        const trimmed = name?.trim();
-        if (!trimmed) return;
-        const created = await createCustomType(db, trimmed);
-        setCustomTypes((prev) => [...prev, created]);
-      },
-      "plain-text",
-      "",
-      "default"
-    );
+  const handleCreateCustom = async () => {
+    const trimmed = newTypeName.trim();
+    if (!trimmed) return;
+    const created = await createCustomType(db, trimmed);
+    setCustomTypes((prev) => [...prev, created]);
+    setNewTypeName("");
+    setShowCreateModal(false);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
 
   const handleDeleteCustom = (customType: CustomWorkoutType) => {
     Alert.alert(
-      "Supprimer ce type ?",
-      `"${customType.name}" sera supprimé définitivement.`,
+      t("session.deleteTypeTitle"),
+      t("session.deleteTypeMessage", { name: customType.name }),
       [
-        { text: "Annuler", style: "cancel" },
+        { text: t("session.cancel"), style: "cancel" },
         {
-          text: "Supprimer",
+          text: t("session.delete"),
           style: "destructive",
           onPress: async () => {
             await deleteCustomType(db, customType.id);
@@ -168,72 +184,256 @@ export default function StartSessionScreen() {
 
   return (
     <Container>
-      <ScrollView className="flex-1 px-6 pt-8">
-        <Pressable onPress={() => router.back()} className="mb-6">
-          <Text className="text-accent text-base">← Retour</Text>
-        </Pressable>
-
-        <Text className="text-2xl font-bold text-textPrimary mb-1">
-          Quel type de séance ?
-        </Text>
-        <Text className="text-base text-textSecondary mb-8">
-          Choisis ton programme
-        </Text>
-
-        <View className="gap-3">
-          {FIXED_TYPES.map(({ type, label, emoji, description }) => (
-            <Pressable
-              key={type}
-              onPress={() => handleSelectFixed(type)}
-              className="bg-card rounded-2xl p-5 border border-cardBorder active:opacity-80 flex-row items-center"
+      <ScrollView
+        className="flex-1"
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 40 }}
+      >
+        {/* ─── Header ─── */}
+        <AnimatedRN.View entering={FadeInDown.duration(400)}>
+          <Pressable
+            onPress={() => router.back()}
+            className="flex-row items-center py-2 mb-4"
+          >
+            <Ionicons
+              name="chevron-back"
+              size={22}
+              color={colors.accent}
+            />
+            <Text
+              className="text-base ml-0.5"
+              style={{ color: colors.accent }}
             >
-              <Text className="text-2xl mr-4">{emoji}</Text>
-              <View>
-                <Text className="text-lg font-semibold text-textPrimary">
-                  {label}
-                </Text>
-                <Text className="text-sm text-textSecondary">{description}</Text>
-              </View>
-            </Pressable>
+              {t("session.back")}
+            </Text>
+          </Pressable>
+
+          <Text className="text-3xl font-bold text-textPrimary mb-1">
+            {t("session.new")}
+          </Text>
+          <Text className="text-sm text-textSecondary mb-6">
+            {t("session.chooseProgram")}
+          </Text>
+        </AnimatedRN.View>
+
+        {/* ─── Fixed Types ─── */}
+        <AnimatedRN.View entering={FadeInDown.duration(400).delay(50)}>
+          <Text className="text-xs font-bold text-textTertiary tracking-widest uppercase mb-3">
+            {t("session.programs")}
+          </Text>
+        </AnimatedRN.View>
+
+        <View className="gap-3 mb-6">
+          {FIXED_TYPES.map(({ type, label, icon, descriptionKey, color }, i) => (
+            <AnimatedRN.View
+              key={type}
+              entering={FadeInDown.duration(400).delay(100 + i * 60)}
+            >
+              <Pressable
+                onPress={() => handleSelectFixed(type)}
+                className="active:opacity-80"
+              >
+                <Card variant="elevated">
+                  <View className="flex-row items-center">
+                    <View
+                      style={[
+                        styles.typeIcon,
+                        { backgroundColor: color + "18" },
+                      ]}
+                    >
+                      <Ionicons name={icon} size={22} color={color} />
+                    </View>
+                    <View className="flex-1 ml-3">
+                      <Text className="text-lg font-bold text-textPrimary">
+                        {label}
+                      </Text>
+                      <Text className="text-sm text-textSecondary mt-0.5">
+                        {t(descriptionKey)}
+                      </Text>
+                    </View>
+                    <Ionicons
+                      name="chevron-forward"
+                      size={18}
+                      color={colors.textTertiary}
+                    />
+                  </View>
+                </Card>
+              </Pressable>
+            </AnimatedRN.View>
           ))}
         </View>
 
+        {/* ─── Custom Types ─── */}
         {customTypes.length > 0 && (
-          <View className="mt-8">
-            <Text className="text-lg font-semibold text-textPrimary mb-3">
-              Mes séances
-            </Text>
-            <View className="gap-3">
-              {customTypes.map((ct) => (
-                <SwipeableCard
+          <>
+            <AnimatedRN.View entering={FadeInDown.duration(400).delay(300)}>
+              <Text className="text-xs font-bold text-textTertiary tracking-widest uppercase mb-3">
+                {t("session.myWorkouts")}
+              </Text>
+            </AnimatedRN.View>
+            <View className="gap-3 mb-6">
+              {customTypes.map((ct, i) => (
+                <AnimatedRN.View
                   key={ct.id}
-                  onDelete={() => handleDeleteCustom(ct)}
+                  entering={FadeInDown.duration(400).delay(350 + i * 50)}
                 >
-                  <Pressable
-                    onPress={() => handleSelectCustom(ct)}
-                    onLongPress={() => handleDeleteCustom(ct)}
-                    className="bg-card rounded-2xl p-5 border border-cardBorder active:opacity-80 flex-row items-center"
-                  >
-                    <Text className="text-2xl mr-4">🏷️</Text>
-                    <Text className="text-lg font-semibold text-textPrimary">
-                      {ct.name}
-                    </Text>
-                  </Pressable>
-                </SwipeableCard>
+                  <SwipeableCard onDelete={() => handleDeleteCustom(ct)}>
+                    <Pressable
+                      onPress={() => handleSelectCustom(ct)}
+                      onLongPress={() => handleDeleteCustom(ct)}
+                      className="active:opacity-80"
+                    >
+                      <Card variant="elevated">
+                        <View className="flex-row items-center">
+                          <View
+                            style={[
+                              styles.typeIcon,
+                              { backgroundColor: colors.accent + "12" },
+                            ]}
+                          >
+                            <Ionicons
+                              name="bookmark"
+                              size={20}
+                              color={colors.accent}
+                            />
+                          </View>
+                          <Text className="text-base font-bold text-textPrimary flex-1 ml-3">
+                            {ct.name}
+                          </Text>
+                          <Ionicons
+                            name="chevron-forward"
+                            size={18}
+                            color={colors.textTertiary}
+                          />
+                        </View>
+                      </Card>
+                    </Pressable>
+                  </SwipeableCard>
+                </AnimatedRN.View>
               ))}
             </View>
-          </View>
+          </>
         )}
 
-        <Pressable
-          onPress={handleCreateCustom}
-          className="mt-6 mb-8 bg-card rounded-2xl p-5 border border-dashed border-textTertiary active:opacity-80 items-center"
+        {/* ─── Create Custom ─── */}
+        <AnimatedRN.View
+          entering={FadeInDown.duration(400).delay(
+            400 + customTypes.length * 50
+          )}
         >
-          <Text className="text-base font-medium text-accent">
-            + Créer un type
-          </Text>
-        </Pressable>
+          <Pressable
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              setShowCreateModal(true);
+            }}
+            className="active:opacity-80"
+          >
+            <View
+              style={[styles.createCard, { borderColor: colors.accent + "40" }]}
+              className="rounded-2.5xl p-5 items-center flex-row justify-center"
+            >
+              <Ionicons
+                name="add-circle"
+                size={22}
+                color={colors.accent}
+              />
+              <Text
+                className="text-base font-bold ml-2"
+                style={{ color: colors.accent }}
+              >
+                {t("session.createType")}
+              </Text>
+            </View>
+          </Pressable>
+        </AnimatedRN.View>
       </ScrollView>
+
+      {/* ─── Create Custom Type Modal (cross-platform) ─── */}
+      <Modal
+        visible={showCreateModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowCreateModal(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          className="flex-1"
+        >
+          <Pressable
+            onPress={() => setShowCreateModal(false)}
+            className="flex-1 justify-center items-center px-8"
+            style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+          >
+            <Pressable
+              onPress={(e) => e.stopPropagation()}
+              className="w-full rounded-2.5xl p-6"
+              style={{ backgroundColor: colors.card }}
+            >
+              <Text className="text-xl font-bold text-textPrimary mb-1">
+                {t("session.newTypeTitle")}
+              </Text>
+              <Text className="text-sm text-textSecondary mb-5">
+                {t("session.newTypeSubtitle")}
+              </Text>
+              <TextInput
+                value={newTypeName}
+                onChangeText={setNewTypeName}
+                placeholder={t("session.newTypePlaceholder")}
+                placeholderTextColor={colors.textTertiary}
+                autoFocus
+                className="bg-fill rounded-xl px-4 h-input text-base text-textPrimary mb-5"
+                style={{ color: colors.textPrimary }}
+              />
+              <View className="flex-row gap-3">
+                <Pressable
+                  onPress={() => {
+                    setNewTypeName("");
+                    setShowCreateModal(false);
+                  }}
+                  className="flex-1 py-3.5 rounded-xl items-center justify-center bg-fill active:opacity-80"
+                >
+                  <Text className="text-base font-semibold text-textSecondary">
+                    {t("session.cancel")}
+                  </Text>
+                </Pressable>
+                <Pressable
+                  onPress={handleCreateCustom}
+                  disabled={!newTypeName.trim()}
+                  className="flex-1 py-3.5 rounded-xl items-center justify-center active:opacity-80"
+                  style={{
+                    backgroundColor: newTypeName.trim()
+                      ? colors.accent
+                      : colors.fill,
+                  }}
+                >
+                  <Text
+                    className="text-base font-bold"
+                    style={{
+                      color: newTypeName.trim() ? "#fff" : colors.textTertiary,
+                    }}
+                  >
+                    {t("session.create")}
+                  </Text>
+                </Pressable>
+              </View>
+            </Pressable>
+          </Pressable>
+        </KeyboardAvoidingView>
+      </Modal>
     </Container>
   );
 }
+
+const styles = StyleSheet.create({
+  typeIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  createCard: {
+    borderWidth: 1.5,
+    borderStyle: "dashed",
+  },
+});

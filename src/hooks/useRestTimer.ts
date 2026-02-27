@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import * as Haptics from "expo-haptics";
 import * as Notifications from "expo-notifications";
+import { useTranslation } from "react-i18next";
 
 interface UseRestTimerReturn {
   seconds: number;
@@ -11,6 +12,7 @@ interface UseRestTimerReturn {
 }
 
 export function useRestTimer(): UseRestTimerReturn {
+  const { t } = useTranslation();
   const [seconds, setSeconds] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -28,8 +30,8 @@ export function useRestTimer(): UseRestTimerReturn {
     await cancelNotification();
     const id = await Notifications.scheduleNotificationAsync({
       content: {
-        title: "Repos terminé 💪",
-        body: "C'est reparti !",
+        title: t("restTimer.notificationTitle"),
+        body: t("restTimer.notificationBody"),
         sound: "default",
         interruptionLevel: "timeSensitive",
       },

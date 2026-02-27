@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { View, Text, ScrollView } from "react-native";
 import { useRouter } from "expo-router";
 import { useSQLiteContext } from "expo-sqlite";
+import { useTranslation } from "react-i18next";
 import { useSessionStore } from "@/store/session-store";
 import { finishSession, getSessionWithDetails, updateSet } from "@/db";
 import { RecapExerciseCard } from "@/components/session/RecapExerciseCard";
@@ -14,6 +15,7 @@ import type { SessionWithDetails, SetStatus } from "@/types";
 export default function RecapScreen() {
   const router = useRouter();
   const db = useSQLiteContext();
+  const { t } = useTranslation();
   const sessionId = useSessionStore((s) => s.sessionId);
   const sessionType = useSessionStore((s) => s.sessionType);
   const sessionLabel = useSessionStore((s) => s.sessionLabel);
@@ -67,7 +69,7 @@ export default function RecapScreen() {
     <Container>
       <ScrollView className="flex-1 px-6 pt-8">
         <Text className="text-2xl font-bold text-textPrimary mb-1">
-          Séance terminée !
+          {t("session.sessionFinished")}
         </Text>
         <Text className="text-base text-textSecondary mb-6">
           {sessionLabel || (sessionType ? WORKOUT_TYPE_LABELS[sessionType] : "")} •{" "}
@@ -89,12 +91,12 @@ export default function RecapScreen() {
 
         <View className="gap-3 mt-4 mb-8">
           <Button
-            title="Enregistrer"
+            title={t("session.saveSession")}
             onPress={handleSaveRating}
             fullWidth
           />
           <Button
-            title="Passer"
+            title={t("session.skip")}
             variant="secondary"
             onPress={handleSkip}
             fullWidth

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { View, Text, TextInput, Pressable } from "react-native";
+import { useTranslation } from "react-i18next";
 import { Card } from "@/components/ui/Card";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { STATUS_EMOJI, formatReps } from "@/lib/utils";
@@ -14,6 +15,7 @@ interface RecapExerciseCardProps {
 const STATUSES: SetStatus[] = ["success", "partial", "fail"];
 
 export function RecapExerciseCard({ log, editable = false, onUpdateSet }: RecapExerciseCardProps) {
+  const { t } = useTranslation();
   const [editingSetId, setEditingSetId] = useState<string | null>(null);
   const [editWeight, setEditWeight] = useState("");
   const [editReps, setEditReps] = useState("");
@@ -46,7 +48,7 @@ export function RecapExerciseCard({ log, editable = false, onUpdateSet }: RecapE
           {log.exercise_name}
         </Text>
         <Text className="text-sm text-textTertiary">
-          {log.sets.length} série{log.sets.length > 1 ? "s" : ""}
+          {t("exercise.setsCount", { count: log.sets.length })}
         </Text>
       </View>
 
@@ -65,14 +67,14 @@ export function RecapExerciseCard({ log, editable = false, onUpdateSet }: RecapE
                 onChangeText={setEditWeight}
                 keyboardType="decimal-pad"
                 className="flex-1 bg-fill rounded-lg px-3 py-2 text-sm text-center"
-                placeholder="Poids"
+                placeholder={t("exercise.weight")}
               />
               <TextInput
                 value={editReps}
                 onChangeText={setEditReps}
                 keyboardType="decimal-pad"
                 className="flex-1 bg-fill rounded-lg px-3 py-2 text-sm text-center"
-                placeholder="Reps"
+                placeholder={t("exercise.reps")}
               />
             </View>
             <View className="flex-row items-center justify-between">
@@ -89,10 +91,10 @@ export function RecapExerciseCard({ log, editable = false, onUpdateSet }: RecapE
               </View>
               <View className="flex-row gap-2">
                 <Pressable onPress={() => setEditingSetId(null)} className="px-3 py-1.5">
-                  <Text className="text-sm text-textSecondary">Annuler</Text>
+                  <Text className="text-sm text-textSecondary">{t("common.cancel")}</Text>
                 </Pressable>
                 <Pressable onPress={saveEdit} className="bg-accent px-3 py-1.5 rounded-lg">
-                  <Text className="text-sm text-white font-medium">OK</Text>
+                  <Text className="text-sm text-white font-medium">{t("exercise.ok")}</Text>
                 </Pressable>
               </View>
             </View>
@@ -115,9 +117,9 @@ export function RecapExerciseCard({ log, editable = false, onUpdateSet }: RecapE
 
       <View className="flex-row mt-2 pt-2 border-t border-separator">
         <Text className="text-xs text-textTertiary flex-1">
-          Volume: {Math.round(totalVolume)}kg
+          {t("exercise.volumeLabel")} {Math.round(totalVolume)}kg
         </Text>
-        <Text className="text-xs text-textTertiary">Max: {maxWeight}kg</Text>
+        <Text className="text-xs text-textTertiary">{t("exercise.maxLabel")} {maxWeight}kg</Text>
       </View>
     </Card>
   );

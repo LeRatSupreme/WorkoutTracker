@@ -1,11 +1,12 @@
 import { useState, useMemo } from "react";
 import { View, Text, TextInput, Pressable, FlatList, ScrollView, Alert } from "react-native";
 import { useRouter } from "expo-router";
+import { useTranslation } from "react-i18next";
 import { useSQLiteContext } from "expo-sqlite";
 import { useExercises } from "@/hooks/useExercises";
 import { useSessionStore } from "@/store/session-store";
 import { createExerciseLog } from "@/db";
-import { MUSCLE_GROUPS, MUSCLE_GROUP_LABELS, SESSION_MUSCLE_MAPPING } from "@/lib/utils";
+import { getMuscleGroups, getMuscleGroupLabel, SESSION_MUSCLE_MAPPING } from "@/lib/utils";
 import { MuscleGroupPicker } from "@/components/session/MuscleGroupPicker";
 import { Container } from "@/components/ui/Container";
 import { useTheme } from "@/hooks/useTheme";
@@ -14,6 +15,7 @@ import type { Exercise, MuscleGroup } from "@/types";
 export default function ExercisePickerScreen() {
   const router = useRouter();
   const db = useSQLiteContext();
+  const { t } = useTranslation();
   const { exercises, search, create, remove, getUsageCount } = useExercises();
   const { colors } = useTheme();
   const [query, setQuery] = useState("");
@@ -64,33 +66,33 @@ export default function ExercisePickerScreen() {
 
     // 1ere confirmation
     Alert.alert(
-      "Supprimer cet exercice ?",
-      `"${exercise.name}" sera supprime du catalogue.`,
+      t("exercisePicker.deleteTitle"),
+      t("exercisePicker.deleteMessage", { name: exercise.name }),
       [
-        { text: "Annuler", style: "cancel" },
+        { text: t("exercisePicker.cancel"), style: "cancel" },
         {
-          text: "Continuer",
+          text: t("exercisePicker.continue"),
           style: "destructive",
           onPress: () => {
             if (usageCount > 0) {
               // 2eme confirmation si l'exo a ete utilise
               Alert.alert(
-                "Attention",
-                `Cet exercice a ete utilise dans ${usageCount} seance${usageCount > 1 ? "s" : ""}. Les series associees seront aussi supprimees.`,
+                t("exercisePicker.warning"),
+                t("exercisePicker.usedInSessions", { count: usageCount }),
                 [
-                  { text: "Annuler", style: "cancel" },
+                  { text: t("exercisePicker.cancel"), style: "cancel" },
                   {
-                    text: "Supprimer quand meme",
+                    text: t("exercisePicker.deleteAnyway"),
                     style: "destructive",
                     onPress: () => {
                       // 3eme confirmation
                       Alert.alert(
-                        "Derniere confirmation",
-                        "Cette action est irreversible.",
+                        t("exercisePicker.lastConfirmation"),
+                        t("exercisePicker.irreversible"),
                         [
-                          { text: "Annuler", style: "cancel" },
+                          { text: t("exercisePicker.cancel"), style: "cancel" },
                           {
-                            text: "Supprimer definitivement",
+                            text: t("exercisePicker.deletePermanently"),
                             style: "destructive",
                             onPress: () => remove(exercise.id),
                           },
@@ -103,12 +105,12 @@ export default function ExercisePickerScreen() {
             } else {
               // 2eme confirmation (exo jamais utilise)
               Alert.alert(
-                "Confirmer la suppression",
-                "Cette action est irreversible.",
+                t("exercisePicker.confirmDelete"),
+                t("exercisePicker.irreversible"),
                 [
-                  { text: "Annuler", style: "cancel" },
+                  { text: t("exercisePicker.cancel"), style: "cancel" },
                   {
-                    text: "Supprimer",
+                    text: t("exercisePicker.delete"),
                     style: "destructive",
                     onPress: () => remove(exercise.id),
                   },
@@ -156,7 +158,7 @@ export default function ExercisePickerScreen() {
       {item.muscle_group && (
         <View className="bg-fill rounded-lg px-2 py-1 ml-2">
           <Text className="text-xs text-textSecondary">
-            {MUSCLE_GROUP_LABELS[item.muscle_group]}
+            {getMuscleGroupLabel(item.muscle_group)}
           </Text>
         </View>
       )}
@@ -168,17 +170,17 @@ export default function ExercisePickerScreen() {
       <View className="flex-1 px-6 pt-4">
         <View className="flex-row items-center justify-between mb-4">
           <Text className="text-xl font-bold text-textPrimary">
-            Ajouter un exercice
+            {t("exercisePicker.title")}
           </Text>
           <Pressable onPress={() => router.back()}>
-            <Text className="text-accent text-base">Annuler</Text>
+            <Text className="text-accent text-base">{t("exercisePicker.cancel")}</Text>
           </Pressable>
         </View>
 
         <TextInput
           value={query}
           onChangeText={handleSearch}
-          placeholder="Rechercher ou creer..."
+          placeholder={t("exercisePicker.searchPlaceholder")}
           autoFocus
           className="bg-fill rounded-xl px-4 py-3 text-base text-textPrimary mb-3"
           placeholderTextColor={colors.textTertiary}
@@ -202,10 +204,10 @@ export default function ExercisePickerScreen() {
                   muscleFilter === null ? "text-white" : "text-textPrimary"
                 }`}
               >
-                Tous
+                {t("exercisePicker.all")}
               </Text>
             </Pressable>
-            {MUSCLE_GROUPS.map((mg) => (
+            {getMuscleGroups().map((mg) => (
               <Pressable
                 key={mg.value}
                 onPress={() => toggleMuscleFilter(mg.value)}
@@ -233,7 +235,7 @@ export default function ExercisePickerScreen() {
             className="bg-fill rounded-xl p-4 mb-3 border border-accent active:opacity-80"
           >
             <Text className="text-accent font-medium">
-              + Creer "{query.trim()}"
+              {t("exercisePicker.createExercise", { name: query.trim() })}
             </Text>
           </Pressable>
         )}
@@ -247,12 +249,12 @@ export default function ExercisePickerScreen() {
               {recommended.length > 0 && (
                 <>
                   <Text className="text-sm font-semibold text-textSecondary mb-2 mt-1">
-                    Recommandes
+                    {t("exercisePicker.recommended")}
                   </Text>
                   {recommended.map(renderExerciseItem)}
                   {others.length > 0 && (
                     <Text className="text-sm font-semibold text-textSecondary mb-2 mt-3">
-                      Autres
+                      {t("exercisePicker.others")}
                     </Text>
                   )}
                   {others.map(renderExerciseItem)}
@@ -261,7 +263,7 @@ export default function ExercisePickerScreen() {
               {recommended.length === 0 && others.map(renderExerciseItem)}
               {filteredExercises.length === 0 && !showCreateButton && (
                 <Text className="text-center text-textTertiary mt-8">
-                  Aucun exercice trouve
+                  {t("exercisePicker.noExercises")}
                 </Text>
               )}
             </>

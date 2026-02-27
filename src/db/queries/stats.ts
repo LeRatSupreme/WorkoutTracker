@@ -1,5 +1,6 @@
 import type { SQLiteDatabase } from "expo-sqlite";
 import type { LastPerformanceSet, WorkoutType } from "@/types";
+import i18n from "@/i18n";
 
 export async function getLastPerformance(
   db: SQLiteDatabase,
@@ -321,19 +322,19 @@ export async function getInsights(
       insights.push({
         type: "record",
         exercise_name: row.exercise_name,
-        message: `Nouveau record : ${row.max_weight}kg !`,
+        message: i18n.t("insights.newRecord", { weight: row.max_weight }),
       });
     } else if (diff > 2.5) {
       insights.push({
         type: "progression",
         exercise_name: row.exercise_name,
-        message: `+${Math.round(diff)}kg (${row.first_half_max}→${row.second_half_max}kg)`,
+        message: i18n.t("insights.progression", { diff: Math.round(diff), from: row.first_half_max, to: row.second_half_max }),
       });
     } else if (row.first_half_max > 0 && Math.abs(diff) <= 1) {
       insights.push({
         type: "stagnation",
         exercise_name: row.exercise_name,
-        message: `Stagne à ${row.max_weight}kg`,
+        message: i18n.t("insights.stagnation", { weight: row.max_weight }),
       });
     }
   }

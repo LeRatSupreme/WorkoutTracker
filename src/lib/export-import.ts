@@ -1,4 +1,5 @@
 import type { SQLiteDatabase } from "expo-sqlite";
+import i18n from "@/i18n";
 
 // Format d'export
 interface ExportData {
@@ -108,7 +109,7 @@ export async function importDatabase(
   const data = JSON.parse(json);
 
   if (!validateExportData(data)) {
-    throw new Error("Format de fichier invalide");
+    throw new Error(i18n.t("export.invalidFormat"));
   }
 
   let result: { exercisesCount: number; sessionsCount: number };

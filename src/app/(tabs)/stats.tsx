@@ -20,6 +20,7 @@ import {
 } from "@/db/queries/stats";
 import { WORKOUT_TYPE_LABELS } from "@/lib/utils";
 import type { WorkoutType } from "@/types";
+import { useTranslation } from "react-i18next";
 
 const SESSION_TYPES: WorkoutType[] = ["push", "pull", "legs", "custom"];
 
@@ -44,6 +45,7 @@ export default function StatsScreen() {
   const [overview, setOverview] = useState<OverviewStats | null>(null);
   const [topExercises, setTopExercises] = useState<TopExercise[]>([]);
   const [insights, setInsights] = useState<Insight[]>([]);
+  const { t } = useTranslation();
 
   const loadStats = useCallback(async () => {
     try {
@@ -79,10 +81,10 @@ export default function StatsScreen() {
         {/* ─── Header ─── */}
         <Animated.View entering={FadeInDown.duration(400)}>
           <Text className="text-3xl font-bold text-textPrimary mb-1">
-            Statistiques
+            {t("stats.title")}
           </Text>
           <Text className="text-sm text-textSecondary mb-5">
-            Ton évolution en un coup d'œil
+            {t("stats.subtitle")}
           </Text>
         </Animated.View>
 
@@ -130,13 +132,13 @@ export default function StatsScreen() {
           <>
             <View className="flex-row gap-3 mb-3">
               <StatCard
-                label="Séances"
+                label={t("stats.sessions")}
                 value={String(overview.total_sessions)}
                 icon="calendar"
                 delay={200}
               />
               <StatCard
-                label="Volume total"
+                label={t("stats.totalVolume")}
                 value={formatVolume(overview.total_volume)}
                 icon="barbell"
                 delay={260}
@@ -144,14 +146,14 @@ export default function StatsScreen() {
             </View>
             <View className="flex-row gap-3 mb-6">
               <StatCard
-                label="Durée moy."
+                label={t("stats.avgDuration")}
                 value={String(overview.avg_duration_min)}
                 unit="min"
                 icon="time"
                 delay={320}
               />
               <StatCard
-                label="Séries"
+                label={t("stats.sets")}
                 value={String(overview.total_sets)}
                 icon="layers"
                 delay={380}
@@ -163,7 +165,7 @@ export default function StatsScreen() {
         {/* ─── Par type ─── */}
         <Animated.View entering={FadeInDown.duration(400).delay(400)}>
           <Text className="text-xs font-bold text-textTertiary tracking-widest uppercase mb-3">
-            Par type de séance
+            {t("stats.byType")}
           </Text>
         </Animated.View>
         <View className="flex-row flex-wrap gap-3 mb-6">
@@ -198,7 +200,7 @@ export default function StatsScreen() {
                     </Text>
                     <View className="flex-row items-center mt-1">
                       <Text className="text-xs text-textTertiary">
-                        Voir les stats
+                        {t("stats.viewStats")}
                       </Text>
                       <Ionicons
                         name="chevron-forward"
@@ -219,7 +221,7 @@ export default function StatsScreen() {
           <>
             <Animated.View entering={FadeInDown.duration(400).delay(600)}>
               <Text className="text-xs font-bold text-textTertiary tracking-widest uppercase mb-3">
-                Top exercices
+                {t("stats.topExercises")}
               </Text>
             </Animated.View>
             <Animated.View entering={FadeInDown.duration(400).delay(650)}>
@@ -296,8 +298,7 @@ export default function StatsScreen() {
                           {ex.exercise_name}
                         </Text>
                         <Text className="text-xs text-textTertiary">
-                          {ex.usage_count} séance
-                          {ex.usage_count > 1 ? "s" : ""}
+                          {t("stats.sessionsCount", { count: ex.usage_count })}
                         </Text>
                       </View>
 

@@ -1,6 +1,7 @@
 import { View, Text, Pressable, StyleSheet } from "react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { useRouter } from "expo-router";
+import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import { Card } from "@/components/ui/Card";
 import { useTheme } from "@/hooks/useTheme";
@@ -19,6 +20,7 @@ const WORKOUT_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
 };
 
 export function LastSessionCard({ session }: LastSessionCardProps) {
+  const { t } = useTranslation();
   const router = useRouter();
   const { colors } = useTheme();
   const icon = WORKOUT_ICONS[session.type] || "barbell";
@@ -29,7 +31,7 @@ export function LastSessionCard({ session }: LastSessionCardProps) {
       <Pressable onPress={() => router.push(`/history/${session.id}`)}>
         <Card variant="elevated">
           <Text className="text-xs font-semibold text-textTertiary tracking-wide uppercase mb-3">
-            Dernière séance
+            {t("home.lastSession")}
           </Text>
           <View className="flex-row items-center">
             {/* Icon */}

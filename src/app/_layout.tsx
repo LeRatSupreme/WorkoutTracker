@@ -1,5 +1,5 @@
 import "../../global.css";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { View, Platform } from "react-native";
 import { Stack } from "expo-router";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -10,6 +10,7 @@ import * as Notifications from "expo-notifications";
 import { migrateDbIfNeeded } from "@/db";
 import { PreferencesProvider, usePreferences } from "@/hooks/usePreferences";
 import { ACCENT_PRESETS } from "@/lib/constants";
+import { initI18n } from "@/i18n";
 
 const DB_NAME = "workout-tracker.db";
 
@@ -37,6 +38,12 @@ function AccentWrapper({ children }: { children: React.ReactNode }) {
 }
 
 export default function RootLayout() {
+  const [i18nReady, setI18nReady] = useState(false);
+
+  useEffect(() => {
+    initI18n().then(() => setI18nReady(true));
+  }, []);
+
   useEffect(() => {
     if (Platform.OS === "ios") {
       Notifications.requestPermissionsAsync({
@@ -46,6 +53,8 @@ export default function RootLayout() {
       Notifications.requestPermissionsAsync();
     }
   }, []);
+
+  if (!i18nReady) return null;
 
   return (
     <SafeAreaProvider>

@@ -15,10 +15,12 @@ import {
 } from "@/db/queries/stats";
 import { formatDate, formatReps, STATUS_EMOJI, WORKOUT_TYPE_LABELS } from "@/lib/utils";
 import type { Exercise } from "@/types";
+import { useTranslation } from "react-i18next";
 
 export default function ExerciseStatsScreen() {
   const router = useRouter();
   const db = useSQLiteContext();
+  const { t } = useTranslation();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [period, setPeriod] = useState<StatPeriod>("3M");
   const [exercise, setExercise] = useState<Exercise | null>(null);
@@ -70,28 +72,28 @@ export default function ExerciseStatsScreen() {
     <Container>
       <View className="px-6 pt-4 pb-2">
         <Pressable onPress={() => router.back()}>
-          <Text className="text-accent text-base">← Retour</Text>
+          <Text className="text-accent text-base">{t("stats.back")}</Text>
         </Pressable>
       </View>
 
       <ScrollView className="flex-1 px-6">
         <Text className="text-2xl font-bold text-textPrimary mb-1">
-          {exercise?.name ?? "Exercice"}
+          {exercise?.name ?? t("statsExercise.exercise")}
         </Text>
         <Text className="text-sm text-textTertiary mb-4">
-          {progress.length} séance{progress.length > 1 ? "s" : ""}
+          {t("statsExercise.sessionsCount", { count: progress.length })}
         </Text>
 
         <PeriodSelector value={period} onChange={setPeriod} />
 
         <View className="flex-row gap-3 mb-3">
           <StatCard
-            label="Max actuel"
+            label={t("statsExercise.currentMax")}
             value={lastPoint ? String(lastPoint.max_weight) : "—"}
             unit="kg"
           />
           <StatCard
-            label="Progression"
+            label={t("statsExercise.progression")}
             value={weightChange > 0 ? `+${weightChange}` : String(weightChange)}
             unit="kg"
           />
@@ -99,12 +101,12 @@ export default function ExerciseStatsScreen() {
 
         <View className="flex-row gap-3 mb-4">
           <StatCard
-            label="1RM estimé"
+            label={t("statsExercise.estimated1RM")}
             value={oneRM > 0 ? String(oneRM) : "—"}
             unit="kg"
           />
           <StatCard
-            label="Moy. reps"
+            label={t("statsExercise.avgReps")}
             value={avgReps > 0 ? String(avgReps) : "—"}
           />
         </View>
@@ -112,19 +114,19 @@ export default function ExerciseStatsScreen() {
         <ProgressChart
           data={progress}
           metric="max_weight"
-          label="Poids max par séance"
+          label={t("statsExercise.maxWeightPerSession")}
         />
 
         <ProgressChart
           data={progress}
           metric="reps_at_max"
-          label="Meilleures reps"
+          label={t("statsExercise.bestReps")}
         />
 
         {history.length > 0 && (
           <View className="mt-2">
             <Text className="text-lg font-semibold text-textPrimary mb-3">
-              Historique des séries
+              {t("statsExercise.setHistory")}
             </Text>
             {history.map((session) => (
               <View

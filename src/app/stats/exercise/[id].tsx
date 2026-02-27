@@ -5,13 +5,16 @@ import { useSQLiteContext } from "expo-sqlite";
 import { PeriodSelector } from "@/components/stats/PeriodSelector";
 import { StatCard } from "@/components/stats/StatCard";
 import { ProgressChart } from "@/components/stats/ProgressChart";
+import { OneRMChart } from "@/components/stats/OneRMChart";
 import { Container } from "@/components/ui/Container";
 import {
   getExerciseProgress,
   getExerciseHistory,
+  get1RMProgression,
   type StatPeriod,
   type ExerciseProgressPoint,
   type ExerciseHistorySession,
+  type OneRMPoint,
 } from "@/db/queries/stats";
 import { formatDate, formatReps, STATUS_EMOJI, WORKOUT_TYPE_LABELS } from "@/lib/utils";
 import type { Exercise } from "@/types";
@@ -26,6 +29,7 @@ export default function ExerciseStatsScreen() {
   const [exercise, setExercise] = useState<Exercise | null>(null);
   const [progress, setProgress] = useState<ExerciseProgressPoint[]>([]);
   const [history, setHistory] = useState<ExerciseHistorySession[]>([]);
+  const [oneRMData, setOneRMData] = useState<OneRMPoint[]>([]);
 
   const loadData = useCallback(async () => {
     if (!id) return;
@@ -37,12 +41,14 @@ export default function ExerciseStatsScreen() {
       );
       setExercise(ex);
 
-      const [data, hist] = await Promise.all([
+      const [data, hist, orm] = await Promise.all([
         getExerciseProgress(db, id, period),
         getExerciseHistory(db, id, period),
+        get1RMProgression(db, id, period),
       ]);
       setProgress(data);
       setHistory(hist);
+      setOneRMData(orm);
     } catch (e) {
       console.log("[ExerciseStats] loadData FAILED:", e);
     }
@@ -122,6 +128,12 @@ export default function ExerciseStatsScreen() {
           metric="reps_at_max"
           label={t("statsExercise.bestReps")}
         />
+
+        {oneRMData.length >= 2 && (
+          <View className="mt-2">
+            <OneRMChart data={oneRMData} />
+          </View>
+        )}
 
         {history.length > 0 && (
           <View className="mt-2">

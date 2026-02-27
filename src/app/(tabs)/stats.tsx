@@ -6,6 +6,8 @@ import { useSQLiteContext } from "expo-sqlite";
 import { Ionicons } from "@expo/vector-icons";
 import { PeriodSelector } from "@/components/stats/PeriodSelector";
 import { StatCard } from "@/components/stats/StatCard";
+import { CalendarHeatmap } from "@/components/stats/CalendarHeatmap";
+import { BodyMap } from "@/components/stats/BodyMap";
 import { Card } from "@/components/ui/Card";
 import { Container } from "@/components/ui/Container";
 import { useTheme } from "@/hooks/useTheme";
@@ -13,10 +15,12 @@ import {
   getOverviewStats,
   getTopExercises,
   getInsights,
+  getPersonalRecords,
   type StatPeriod,
   type OverviewStats,
   type TopExercise,
   type Insight,
+  type PersonalRecord,
 } from "@/db/queries/stats";
 import { WORKOUT_TYPE_LABELS } from "@/lib/utils";
 import type { WorkoutType } from "@/types";
@@ -45,18 +49,21 @@ export default function StatsScreen() {
   const [overview, setOverview] = useState<OverviewStats | null>(null);
   const [topExercises, setTopExercises] = useState<TopExercise[]>([]);
   const [insights, setInsights] = useState<Insight[]>([]);
+  const [topPRs, setTopPRs] = useState<PersonalRecord[]>([]);
   const { t } = useTranslation();
 
   const loadStats = useCallback(async () => {
     try {
-      const [ov, top, ins] = await Promise.all([
+      const [ov, top, ins, prs] = await Promise.all([
         getOverviewStats(db, period),
         getTopExercises(db, period),
         getInsights(db, period),
+        getPersonalRecords(db),
       ]);
       setOverview(ov);
       setTopExercises(top);
       setInsights(ins);
+      setTopPRs(prs.slice(0, 3));
     } catch (e) {
       console.log("[Stats] loadStats error:", e);
     }
@@ -88,12 +95,24 @@ export default function StatsScreen() {
           </Text>
         </Animated.View>
 
-        <PeriodSelector value={period} onChange={setPeriod} />
+        {/* ─── Calendar Heatmap ─── */}
+        <Animated.View entering={FadeInDown.duration(400).delay(100)}>
+          <CalendarHeatmap />
+        </Animated.View>
+
+        {/* ─── Body Map ─── */}
+        <Animated.View entering={FadeInDown.duration(400).delay(150)} className="mt-1">
+          <BodyMap />
+        </Animated.View>
+
+        <View className="mt-2">
+          <PeriodSelector value={period} onChange={setPeriod} />
+        </View>
 
         {/* ─── Insights ─── */}
         {insights.length > 0 && (
           <Animated.View
-            entering={FadeInDown.duration(400).delay(150)}
+            entering={FadeInDown.duration(400).delay(200)}
             className="mb-5"
           >
             <Card variant="glow">
@@ -135,13 +154,13 @@ export default function StatsScreen() {
                 label={t("stats.sessions")}
                 value={String(overview.total_sessions)}
                 icon="calendar"
-                delay={200}
+                delay={250}
               />
               <StatCard
                 label={t("stats.totalVolume")}
                 value={formatVolume(overview.total_volume)}
                 icon="barbell"
-                delay={260}
+                delay={300}
               />
             </View>
             <View className="flex-row gap-3 mb-6">
@@ -150,20 +169,94 @@ export default function StatsScreen() {
                 value={String(overview.avg_duration_min)}
                 unit="min"
                 icon="time"
-                delay={320}
+                delay={350}
               />
               <StatCard
                 label={t("stats.sets")}
                 value={String(overview.total_sets)}
                 icon="layers"
-                delay={380}
+                delay={400}
               />
             </View>
           </>
         )}
 
+        {/* ─── Quick Actions (PRs + Compare) ─── */}
+        <Animated.View entering={FadeInDown.duration(400).delay(420)}>
+          <View className="flex-row gap-3 mb-6">
+            <Pressable
+              className="flex-1"
+              onPress={() => router.push("/stats/personal-records")}
+            >
+              <Card variant="elevated" className="min-h-[90px]">
+                <View
+                  style={[
+                    styles.typeIcon,
+                    { backgroundColor: "#FFD60A18" },
+                  ]}
+                >
+                  <Ionicons name="trophy" size={18} color="#FFD60A" />
+                </View>
+                <Text className="text-base font-bold text-textPrimary mt-2">
+                  {t("stats.personalRecords")}
+                </Text>
+                {topPRs.length > 0 && (
+                  <Text className="text-xs text-textTertiary mt-0.5" numberOfLines={1}>
+                    {topPRs[0].exercise_name} — {topPRs[0].estimated_1rm}kg
+                  </Text>
+                )}
+                <View className="flex-row items-center mt-1">
+                  <Text className="text-xs" style={{ color: colors.accent }}>
+                    {t("stats.viewAll")}
+                  </Text>
+                  <Ionicons
+                    name="chevron-forward"
+                    size={12}
+                    color={colors.accent}
+                    style={{ marginLeft: 2 }}
+                  />
+                </View>
+              </Card>
+            </Pressable>
+
+            <Pressable
+              className="flex-1"
+              onPress={() => router.push("/stats/compare")}
+            >
+              <Card variant="elevated" className="min-h-[90px]">
+                <View
+                  style={[
+                    styles.typeIcon,
+                    { backgroundColor: colors.accent + "18" },
+                  ]}
+                >
+                  <Ionicons
+                    name="git-compare-outline"
+                    size={18}
+                    color={colors.accent}
+                  />
+                </View>
+                <Text className="text-base font-bold text-textPrimary mt-2">
+                  {t("stats.comparison")}
+                </Text>
+                <View className="flex-row items-center mt-1">
+                  <Text className="text-xs" style={{ color: colors.accent }}>
+                    {t("stats.compareSessions")}
+                  </Text>
+                  <Ionicons
+                    name="chevron-forward"
+                    size={12}
+                    color={colors.accent}
+                    style={{ marginLeft: 2 }}
+                  />
+                </View>
+              </Card>
+            </Pressable>
+          </View>
+        </Animated.View>
+
         {/* ─── Par type ─── */}
-        <Animated.View entering={FadeInDown.duration(400).delay(400)}>
+        <Animated.View entering={FadeInDown.duration(400).delay(450)}>
           <Text className="text-xs font-bold text-textTertiary tracking-widest uppercase mb-3">
             {t("stats.byType")}
           </Text>
@@ -174,7 +267,7 @@ export default function StatsScreen() {
             return (
               <Animated.View
                 key={type}
-                entering={FadeInDown.duration(400).delay(450 + i * 50)}
+                entering={FadeInDown.duration(400).delay(480 + i * 50)}
                 style={{ width: "47%" }}
               >
                 <Pressable
@@ -219,12 +312,12 @@ export default function StatsScreen() {
         {/* ─── Top exercices ─── */}
         {topExercises.length > 0 && (
           <>
-            <Animated.View entering={FadeInDown.duration(400).delay(600)}>
+            <Animated.View entering={FadeInDown.duration(400).delay(650)}>
               <Text className="text-xs font-bold text-textTertiary tracking-widest uppercase mb-3">
                 {t("stats.topExercises")}
               </Text>
             </Animated.View>
-            <Animated.View entering={FadeInDown.duration(400).delay(650)}>
+            <Animated.View entering={FadeInDown.duration(400).delay(700)}>
               <Card variant="elevated">
                 {topExercises.map((ex, i) => {
                   const trend =

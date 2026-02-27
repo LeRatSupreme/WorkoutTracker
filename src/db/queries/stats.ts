@@ -457,3 +457,275 @@ export async function getSessionTypeDurations(
     params
   );
 }
+
+// ─── Calendar Heatmap ─────────────────────────────────────────────
+
+export interface HeatmapDay {
+  date: string;       // YYYY-MM-DD
+  volume: number;     // total volume that day
+  sessionCount: number;
+}
+
+export async function getHeatmapData(
+  db: SQLiteDatabase,
+  year: number
+): Promise<HeatmapDay[]> {
+  const startDate = `${year}-01-01T00:00:00.000Z`;
+  const endDate = `${year + 1}-01-01T00:00:00.000Z`;
+
+  return db.getAllAsync<HeatmapDay>(
+    `SELECT
+       date(ws.started_at) as date,
+       COALESCE(SUM(s.weight * el.weight_factor * s.reps), 0) as volume,
+       COUNT(DISTINCT ws.id) as sessionCount
+     FROM workout_sessions ws
+     LEFT JOIN exercise_logs el ON el.session_id = ws.id
+     LEFT JOIN sets s ON s.exercise_log_id = el.id
+     WHERE ws.finished_at IS NOT NULL
+       AND ws.started_at >= ? AND ws.started_at < ?
+     GROUP BY date(ws.started_at)
+     ORDER BY date ASC`,
+    [startDate, endDate]
+  );
+}
+
+// ─── Personal Records ─────────────────────────────────────────────
+
+export interface PersonalRecord {
+  exercise_id: string;
+  exercise_name: string;
+  muscle_group: string | null;
+  best_weight: number;
+  best_reps_at_weight: number;
+  estimated_1rm: number;
+  date: string;
+}
+
+export async function getPersonalRecords(
+  db: SQLiteDatabase
+): Promise<PersonalRecord[]> {
+  // For each exercise, find the set with the highest estimated 1RM (Epley)
+  const rows = await db.getAllAsync<{
+    exercise_id: string;
+    exercise_name: string;
+    muscle_group: string | null;
+    weight: number;
+    reps: number;
+    date: string;
+  }>(
+    `SELECT
+       e.id as exercise_id,
+       e.name as exercise_name,
+       e.muscle_group,
+       MAX(s.weight * el.weight_factor) as weight,
+       (SELECT s2.reps FROM sets s2
+        JOIN exercise_logs el2 ON s2.exercise_log_id = el2.id
+        WHERE el2.exercise_id = e.id
+        ORDER BY s2.weight * el2.weight_factor DESC, s2.reps DESC LIMIT 1) as reps,
+       (SELECT ws2.started_at FROM sets s3
+        JOIN exercise_logs el3 ON s3.exercise_log_id = el3.id
+        JOIN workout_sessions ws2 ON el3.session_id = ws2.id
+        WHERE el3.exercise_id = e.id
+        ORDER BY s3.weight * el3.weight_factor DESC, s3.reps DESC LIMIT 1) as date
+     FROM exercise_logs el
+     JOIN exercises e ON el.exercise_id = e.id
+     JOIN workout_sessions ws ON el.session_id = ws.id
+     JOIN sets s ON s.exercise_log_id = el.id
+     WHERE ws.finished_at IS NOT NULL
+     GROUP BY e.id
+     HAVING weight > 0
+     ORDER BY MAX(s.weight * el.weight_factor * (1 + s.reps / 30.0)) DESC`
+  );
+
+  return rows.map((r) => ({
+    exercise_id: r.exercise_id,
+    exercise_name: r.exercise_name,
+    muscle_group: r.muscle_group,
+    best_weight: r.weight,
+    best_reps_at_weight: r.reps,
+    estimated_1rm: Math.round(r.weight * (1 + r.reps / 30)),
+    date: r.date,
+  }));
+}
+
+// ─── 1RM Progression ─────────────────────────────────────────────
+
+export interface OneRMPoint {
+  date: string;
+  estimated_1rm: number;
+}
+
+export async function get1RMProgression(
+  db: SQLiteDatabase,
+  exerciseId: string,
+  period: StatPeriod
+): Promise<OneRMPoint[]> {
+  const since = getPeriodDate(period);
+  const whereClause = since ? "AND ws.started_at >= ?" : "";
+  const params = since ? [exerciseId, since] : [exerciseId];
+
+  const rows = await db.getAllAsync<{
+    date: string;
+    max_weight: number;
+    reps_at_max: number;
+  }>(
+    `SELECT
+       ws.started_at as date,
+       MAX(s.weight * el.weight_factor) as max_weight,
+       (SELECT s2.reps FROM sets s2
+        WHERE s2.exercise_log_id = el.id
+        ORDER BY s2.weight DESC, s2.reps DESC LIMIT 1) as reps_at_max
+     FROM exercise_logs el
+     JOIN workout_sessions ws ON el.session_id = ws.id
+     JOIN sets s ON s.exercise_log_id = el.id
+     WHERE el.exercise_id = ? AND ws.finished_at IS NOT NULL ${whereClause}
+     GROUP BY ws.id
+     ORDER BY ws.started_at ASC`,
+    params
+  );
+
+  return rows.map((r) => ({
+    date: r.date,
+    estimated_1rm: Math.round(r.max_weight * (1 + r.reps_at_max / 30)),
+  }));
+}
+
+// ─── Body Map (muscle volume this week) ───────────────────────────
+
+export interface MuscleVolumeData {
+  muscle_group: string;
+  volume: number;
+  sets_count: number;
+  last_session_date: string | null;
+}
+
+export async function getMuscleVolumeThisWeek(
+  db: SQLiteDatabase
+): Promise<MuscleVolumeData[]> {
+  const now = new Date();
+  const day = now.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  const monday = new Date(now);
+  monday.setDate(monday.getDate() + diff);
+  monday.setHours(0, 0, 0, 0);
+
+  return db.getAllAsync<MuscleVolumeData>(
+    `SELECT
+       e.muscle_group,
+       COALESCE(SUM(s.weight * el.weight_factor * s.reps), 0) as volume,
+       COUNT(s.id) as sets_count,
+       MAX(ws.started_at) as last_session_date
+     FROM exercise_logs el
+     JOIN exercises e ON el.exercise_id = e.id
+     JOIN workout_sessions ws ON el.session_id = ws.id
+     JOIN sets s ON s.exercise_log_id = el.id
+     WHERE ws.finished_at IS NOT NULL
+       AND ws.started_at >= ?
+       AND e.muscle_group IS NOT NULL
+     GROUP BY e.muscle_group`,
+    [monday.toISOString()]
+  );
+}
+
+// ─── Session Comparison ───────────────────────────────────────────
+
+export interface ComparisonSession {
+  id: string;
+  type: string;
+  label: string | null;
+  started_at: string;
+  finished_at: string | null;
+  duration_min: number;
+  total_volume: number;
+  total_sets: number;
+  total_reps: number;
+  exercises: {
+    name: string;
+    volume: number;
+    sets: number;
+    max_weight: number;
+  }[];
+}
+
+export async function getComparableSessions(
+  db: SQLiteDatabase,
+  type: WorkoutType,
+  limit: number = 20
+): Promise<{ id: string; date: string; label: string | null }[]> {
+  return db.getAllAsync<{ id: string; date: string; label: string | null }>(
+    `SELECT id, started_at as date, label
+     FROM workout_sessions
+     WHERE finished_at IS NOT NULL AND type = ?
+     ORDER BY started_at DESC
+     LIMIT ?`,
+    [type, limit]
+  );
+}
+
+export async function getSessionForComparison(
+  db: SQLiteDatabase,
+  sessionId: string
+): Promise<ComparisonSession | null> {
+  const session = await db.getFirstAsync<{
+    id: string;
+    type: string;
+    label: string | null;
+    started_at: string;
+    finished_at: string | null;
+  }>(
+    "SELECT id, type, label, started_at, finished_at FROM workout_sessions WHERE id = ?",
+    [sessionId]
+  );
+  if (!session) return null;
+
+  const durationMin = session.finished_at
+    ? Math.round(
+        (new Date(session.finished_at).getTime() - new Date(session.started_at).getTime()) / 60000
+      )
+    : 0;
+
+  const exercises = await db.getAllAsync<{
+    name: string;
+    volume: number;
+    sets: number;
+    max_weight: number;
+  }>(
+    `SELECT
+       e.name,
+       COALESCE(SUM(s.weight * el.weight_factor * s.reps), 0) as volume,
+       COUNT(s.id) as sets,
+       COALESCE(MAX(s.weight * el.weight_factor), 0) as max_weight
+     FROM exercise_logs el
+     JOIN exercises e ON el.exercise_id = e.id
+     LEFT JOIN sets s ON s.exercise_log_id = el.id
+     WHERE el.session_id = ?
+     GROUP BY e.id
+     ORDER BY el."order" ASC`,
+    [sessionId]
+  );
+
+  const totals = exercises.reduce(
+    (acc, ex) => ({
+      volume: acc.volume + ex.volume,
+      sets: acc.sets + ex.sets,
+    }),
+    { volume: 0, sets: 0 }
+  );
+
+  const totalReps = await db.getFirstAsync<{ total: number }>(
+    `SELECT COALESCE(SUM(s.reps), 0) as total
+     FROM sets s
+     JOIN exercise_logs el ON s.exercise_log_id = el.id
+     WHERE el.session_id = ?`,
+    [sessionId]
+  );
+
+  return {
+    ...session,
+    duration_min: durationMin,
+    total_volume: totals.volume,
+    total_sets: totals.sets,
+    total_reps: totalReps?.total ?? 0,
+    exercises,
+  };
+}

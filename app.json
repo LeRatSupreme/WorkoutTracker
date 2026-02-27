@@ -2,7 +2,7 @@
   "expo": {
     "name": "WorkoutTracker",
     "slug": "workout-tracker",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -15,11 +15,21 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.workout.tracker"
+      "bundleIdentifier": "com.workout.tracker",
+      "infoPlist": {
+        "NSHealthShareUsageDescription": "WorkoutTracker reads your heart rate and body weight to enrich your workout tracking.",
+        "NSHealthUpdateUsageDescription": "WorkoutTracker saves your workouts and body weight to Apple Health."
+      }
     },
     "plugins": [
       "expo-router",
-      "expo-sqlite"
+      "expo-sqlite",
+      ["@kingstinct/react-native-healthkit", {
+        "background": false
+      }],
+      ["react-native-health-connect", {
+        "requestPermissionsOnLaunch": false
+      }]
     ],
     "android": {
       "package": "com.workout.tracker",
@@ -28,7 +38,12 @@
         "backgroundColor": "#ffffff"
       },
       "permissions": [
-        "NOTIFICATIONS"
+        "NOTIFICATIONS",
+        "android.permission.health.READ_HEART_RATE",
+        "android.permission.health.READ_WEIGHT",
+        "android.permission.health.WRITE_WEIGHT",
+        "android.permission.health.WRITE_EXERCISE",
+        "android.permission.health.READ_EXERCISE"
       ]
     }
   }

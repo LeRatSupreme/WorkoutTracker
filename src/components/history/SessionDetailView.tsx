@@ -131,6 +131,54 @@ export function SessionDetailView({ session }: SessionDetailViewProps) {
         </Card>
       </Animated.View>
 
+      {/* ─── Health Stats ─── */}
+      {(session.avg_heart_rate || session.calories_burned) && (
+        <Animated.View
+          entering={FadeInDown.duration(400).delay(150)}
+          className="flex-row gap-3 mb-5"
+        >
+          {session.avg_heart_rate && (
+            <Card variant="elevated" className="flex-1">
+              <View className="flex-row items-center mb-1">
+                <Ionicons name="heart" size={14} color="#FF453A" />
+                <Text className="text-xs text-textTertiary ml-1 uppercase tracking-wide font-semibold">
+                  {t("health.avgHR")}
+                </Text>
+              </View>
+              <Text className="text-xl font-bold text-textPrimary">
+                {session.avg_heart_rate}
+              </Text>
+            </Card>
+          )}
+          {session.max_heart_rate && (
+            <Card variant="elevated" className="flex-1">
+              <View className="flex-row items-center mb-1">
+                <Ionicons name="heart-circle" size={14} color="#FF9F0A" />
+                <Text className="text-xs text-textTertiary ml-1 uppercase tracking-wide font-semibold">
+                  {t("health.maxHR")}
+                </Text>
+              </View>
+              <Text className="text-xl font-bold text-textPrimary">
+                {session.max_heart_rate}
+              </Text>
+            </Card>
+          )}
+          {session.calories_burned && (
+            <Card variant="elevated" className="flex-1">
+              <View className="flex-row items-center mb-1">
+                <Ionicons name="flame" size={14} color="#FF6B35" />
+                <Text className="text-xs text-textTertiary ml-1 uppercase tracking-wide font-semibold">
+                  {t("health.calories")}
+                </Text>
+              </View>
+              <Text className="text-xl font-bold text-textPrimary">
+                {session.calories_burned}
+              </Text>
+            </Card>
+          )}
+        </Animated.View>
+      )}
+
       {/* ─── Exercise List ─── */}
       <Animated.View entering={FadeInDown.duration(400).delay(200)}>
         <Text className="text-xs font-bold text-textTertiary tracking-widest uppercase mb-3">

@@ -7,6 +7,7 @@ import {
   Alert,
   ScrollView,
   StyleSheet,
+  Switch,
 } from "react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { useRouter } from "expo-router";
@@ -23,6 +24,16 @@ import { Container } from "@/components/ui/Container";
 import { Card } from "@/components/ui/Card";
 import { ACCENT_PRESETS, AccentKey } from "@/lib/constants";
 import { exportDatabase, importDatabase } from "@/lib/export-import";
+import {
+  isHealthEnabled,
+  setHealthEnabled,
+  initHealth,
+  getUserMaxHR,
+  setUserMaxHR,
+  getUserWeight,
+  setUserWeight,
+} from "@/lib/health";
+import { addBodyWeightLog, getLatestBodyWeight } from "@/db";
 
 const ACCENT_KEYS = Object.keys(ACCENT_PRESETS) as AccentKey[];
 
@@ -106,13 +117,37 @@ export default function SettingsScreen() {
   const [name, setName] = useState("");
   const [exporting, setExporting] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [healthOn, setHealthOn] = useState(false);
+  const [maxHR, setMaxHR] = useState("");
+  const [bodyWeight, setBodyWeight] = useState("");
 
   useEffect(() => {
     setName(firstName);
   }, [firstName]);
 
+  // Load health prefs
+  useEffect(() => {
+    isHealthEnabled().then(setHealthOn);
+    getUserMaxHR().then((v) => setMaxHR(v.toString()));
+    getUserWeight().then((v) => setBodyWeight(v ? v.toString() : ""));
+    getLatestBodyWeight(db).then((v) => {
+      if (v) setBodyWeight(v.toString());
+    });
+  }, [db]);
+
   const handleSave = async () => {
     await setFirstName(name.trim());
+
+    // Save health settings
+    await setHealthEnabled(healthOn);
+    const hrNum = parseInt(maxHR, 10);
+    if (hrNum > 0) await setUserMaxHR(hrNum);
+    const weightNum = parseFloat(bodyWeight);
+    if (weightNum > 0) {
+      await setUserWeight(weightNum);
+      await addBodyWeightLog(db, weightNum);
+    }
+
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     router.back();
   };
@@ -120,6 +155,22 @@ export default function SettingsScreen() {
   const handleAccentChange = (key: AccentKey) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setAccentKey(key);
+  };
+
+  const handleHealthToggle = async (value: boolean) => {
+    if (value) {
+      const success = await initHealth(true);
+      if (!success) {
+        Alert.alert(
+          t("health.unavailableTitle"),
+          t("health.unavailableMessage")
+        );
+        return;
+      }
+    }
+    setHealthOn(value);
+    await setHealthEnabled(value);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
   const handleExport = async () => {
@@ -401,6 +452,103 @@ export default function SettingsScreen() {
                   </Text>
                 </Pressable>
               </View>
+            </Card>
+          </Animated.View>
+
+          {/* ─── Santé ─── */}
+          <SectionHeader title={t("health.title")} delay={310} />
+          <Animated.View entering={FadeInDown.duration(400).delay(330)}>
+            <Card variant="elevated">
+              {/* Toggle */}
+              <View className="flex-row items-center py-2">
+                <View
+                  style={[
+                    styles.rowIcon,
+                    { backgroundColor: "#FF453A15" },
+                  ]}
+                >
+                  <Ionicons name="heart" size={18} color="#FF453A" />
+                </View>
+                <View className="flex-1 ml-3">
+                  <Text className="text-base text-textPrimary">
+                    {t("health.enable")}
+                  </Text>
+                  <Text className="text-xs text-textTertiary mt-0.5">
+                    {t("health.enableSubtitle")}
+                  </Text>
+                </View>
+                <Switch
+                  value={healthOn}
+                  onValueChange={handleHealthToggle}
+                  trackColor={{ true: colors.accent }}
+                />
+              </View>
+
+              {healthOn && (
+                <>
+                  <View
+                    className="h-px mx-1 my-1"
+                    style={{ backgroundColor: colors.separator }}
+                  />
+
+                  {/* Body weight */}
+                  <View className="flex-row items-center py-2">
+                    <View
+                      style={[
+                        styles.rowIcon,
+                        { backgroundColor: "#30D15815" },
+                      ]}
+                    >
+                      <Ionicons name="scale" size={18} color="#30D158" />
+                    </View>
+                    <Text className="flex-1 text-base text-textPrimary ml-3">
+                      {t("health.bodyWeight")}
+                    </Text>
+                    <View className="flex-row items-center">
+                      <TextInput
+                        value={bodyWeight}
+                        onChangeText={setBodyWeight}
+                        placeholder="75"
+                        keyboardType="decimal-pad"
+                        className="text-base text-textPrimary bg-fill rounded-xl px-3 h-10 w-20 text-center"
+                        placeholderTextColor={colors.textTertiary}
+                      />
+                      <Text className="text-sm text-textTertiary ml-1">kg</Text>
+                    </View>
+                  </View>
+
+                  <View
+                    className="h-px mx-1 my-1"
+                    style={{ backgroundColor: colors.separator }}
+                  />
+
+                  {/* Max HR */}
+                  <View className="flex-row items-center py-2">
+                    <View
+                      style={[
+                        styles.rowIcon,
+                        { backgroundColor: "#FF9F0A15" },
+                      ]}
+                    >
+                      <Ionicons name="pulse" size={18} color="#FF9F0A" />
+                    </View>
+                    <Text className="flex-1 text-base text-textPrimary ml-3">
+                      {t("health.maxHRSetting")}
+                    </Text>
+                    <View className="flex-row items-center">
+                      <TextInput
+                        value={maxHR}
+                        onChangeText={setMaxHR}
+                        placeholder="190"
+                        keyboardType="number-pad"
+                        className="text-base text-textPrimary bg-fill rounded-xl px-3 h-10 w-20 text-center"
+                        placeholderTextColor={colors.textTertiary}
+                      />
+                      <Text className="text-sm text-textTertiary ml-1">BPM</Text>
+                    </View>
+                  </View>
+                </>
+              )}
             </Card>
           </Animated.View>
 

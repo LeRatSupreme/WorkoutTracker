@@ -28,18 +28,32 @@ export async function createSession(
     started_at: now,
     finished_at: null,
     rating: null,
+    avg_heart_rate: null,
+    max_heart_rate: null,
+    calories_burned: null,
   };
 }
 
 export async function finishSession(
   db: SQLiteDatabase,
   sessionId: string,
-  rating?: number
+  rating?: number,
+  healthData?: { avgHeartRate?: number; maxHeartRate?: number; caloriesBurned?: number }
 ): Promise<void> {
   const now = new Date().toISOString();
   await db.runAsync(
-    "UPDATE workout_sessions SET finished_at = ?, rating = ? WHERE id = ?",
-    [now, rating ?? null, sessionId]
+    `UPDATE workout_sessions
+     SET finished_at = ?, rating = ?,
+         avg_heart_rate = ?, max_heart_rate = ?, calories_burned = ?
+     WHERE id = ?`,
+    [
+      now,
+      rating ?? null,
+      healthData?.avgHeartRate ?? null,
+      healthData?.maxHeartRate ?? null,
+      healthData?.caloriesBurned ?? null,
+      sessionId,
+    ]
   );
 }
 

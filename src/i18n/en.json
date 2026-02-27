@@ -97,7 +97,7 @@
     "importData": "Import data",
     "importSubtitle": "From an exported JSON file",
     "about": "About",
-    "aboutVersion": "WorkoutTracker v1.0.0",
+    "aboutVersion": "WorkoutTracker v1.0.2",
     "aboutMadeWith": "Made with 💪 for athletes",
     "error": "Error",
     "exportError": "Unable to export data",
@@ -319,5 +319,27 @@
     "delete": "Delete",
     "back": "Back",
     "save": "Save"
+  },
+  "health": {
+    "title": "Health",
+    "enable": "Apple Health / Health Connect",
+    "enableSubtitle": "Heart rate, calories, body weight",
+    "bodyWeight": "Body weight",
+    "maxHRSetting": "Max HR",
+    "avgHR": "Avg HR",
+    "maxHR": "Max HR",
+    "avgBPM": "Avg BPM",
+    "maxBPM": "Max BPM",
+    "kcal": "kcal",
+    "calories": "Calories",
+    "unavailableTitle": "Health unavailable",
+    "unavailableMessage": "Health data is not available on this device. Check your permissions in Settings.",
+    "zones": {
+      "rest": "Rest",
+      "warmup": "Warm-up",
+      "fatburn": "Fat burn",
+      "cardio": "Cardio",
+      "peak": "Peak"
+    }
   }
 }

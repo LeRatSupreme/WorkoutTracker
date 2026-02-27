@@ -97,7 +97,7 @@
     "importData": "Importer des données",
     "importSubtitle": "Depuis un fichier JSON exporté",
     "about": "À propos",
-    "aboutVersion": "WorkoutTracker v1.0.0",
+    "aboutVersion": "WorkoutTracker v1.0.2",
     "aboutMadeWith": "Fait avec 💪 pour les sportifs",
     "error": "Erreur",
     "exportError": "Impossible d'exporter les données",
@@ -319,5 +319,27 @@
     "delete": "Supprimer",
     "back": "Retour",
     "save": "Enregistrer"
+  },
+  "health": {
+    "title": "Santé",
+    "enable": "Apple Santé / Health Connect",
+    "enableSubtitle": "Fréquence cardiaque, calories, poids",
+    "bodyWeight": "Poids corporel",
+    "maxHRSetting": "FC max",
+    "avgHR": "FC moy.",
+    "maxHR": "FC max",
+    "avgBPM": "BPM moy.",
+    "maxBPM": "BPM max",
+    "kcal": "kcal",
+    "calories": "Calories",
+    "unavailableTitle": "Santé indisponible",
+    "unavailableMessage": "Les données de santé ne sont pas disponibles sur cet appareil. Vérifiez vos permissions dans les réglages.",
+    "zones": {
+      "rest": "Repos",
+      "warmup": "Échauffement",
+      "fatburn": "Brûle-graisse",
+      "cardio": "Cardio",
+      "peak": "Intensité max"
+    }
   }
 }

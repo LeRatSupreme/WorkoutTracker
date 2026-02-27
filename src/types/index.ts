@@ -24,6 +24,9 @@ export interface WorkoutSession {
   started_at: string;
   finished_at: string | null;
   rating: number | null;
+  avg_heart_rate: number | null;
+  max_heart_rate: number | null;
+  calories_burned: number | null;
 }
 
 // Un exercice dans une séance
@@ -64,6 +67,15 @@ export interface ExerciseLogWithDetails extends ExerciseLog {
 
 export interface SessionWithDetails extends WorkoutSession {
   logs: ExerciseLogWithDetails[];
+}
+
+// Entrée de poids corporel
+export interface BodyWeightLog {
+  id: string;
+  weight: number;
+  date: string;
+  synced: boolean;
+  created_at: string;
 }
 
 export interface LastPerformanceSet {

@@ -6,9 +6,11 @@ import { useTranslation } from "react-i18next";
 import { useSessionStore } from "@/store/session-store";
 import { addSet, removeSet, updateComment, updateWeightFactor, createExerciseLog, deleteExerciseLog, getSuggestedExercises, deleteSession } from "@/db";
 import { useElapsedTimer } from "@/hooks/useElapsedTimer";
+import { useHeartRate } from "@/hooks/useHeartRate";
 import { ExerciseList } from "@/components/session/ExerciseList";
 import { ActiveExerciseCard } from "@/components/session/ActiveExerciseCard";
 import { RestTimerModal } from "@/components/session/RestTimerModal";
+import { HeartRateDisplay } from "@/components/session/HeartRateDisplay";
 import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
 import { WORKOUT_TYPE_LABELS } from "@/lib/utils";
@@ -36,6 +38,7 @@ export default function ActiveSessionScreen() {
   const [suggestions, setSuggestions] = useState<Exercise[]>([]);
 
   const elapsed = useElapsedTimer(startedAt);
+  const hr = useHeartRate(startedAt);
   const currentExercise = exercises[currentIndex] ?? null;
 
   // Charger les suggestions au mount
@@ -176,6 +179,18 @@ export default function ActiveSessionScreen() {
           </View>
           <Button title={t("session.finish")} variant="secondary" onPress={handleFinish} />
         </View>
+
+        {hr.isMonitoring && (
+          <View className="px-6">
+            <HeartRateDisplay
+              currentBPM={hr.currentBPM}
+              avgBPM={hr.avgBPM}
+              maxBPM={hr.maxBPM}
+              zone={hr.zone}
+              isMonitoring={hr.isMonitoring}
+            />
+          </View>
+        )}
 
         <ScrollView className="flex-1 px-6" keyboardShouldPersistTaps="handled">
           <ExerciseList

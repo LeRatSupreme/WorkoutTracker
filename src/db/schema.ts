@@ -15,7 +15,20 @@ export const CREATE_WORKOUT_SESSIONS_TABLE = `
     label TEXT,
     started_at TEXT NOT NULL DEFAULT (datetime('now')),
     finished_at TEXT,
-    rating INTEGER CHECK(rating IS NULL OR (rating >= 1 AND rating <= 5))
+    rating INTEGER CHECK(rating IS NULL OR (rating >= 1 AND rating <= 5)),
+    avg_heart_rate INTEGER,
+    max_heart_rate INTEGER,
+    calories_burned INTEGER
+  );
+`;
+
+export const CREATE_BODY_WEIGHT_LOGS_TABLE = `
+  CREATE TABLE IF NOT EXISTS body_weight_logs (
+    id TEXT PRIMARY KEY NOT NULL,
+    weight REAL NOT NULL,
+    date TEXT NOT NULL,
+    synced INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
 `;
 
@@ -57,4 +70,5 @@ export const ALL_TABLES = [
   CREATE_EXERCISE_LOGS_TABLE,
   CREATE_SETS_TABLE,
   CREATE_CUSTOM_WORKOUT_TYPES_TABLE,
+  CREATE_BODY_WEIGHT_LOGS_TABLE,
 ];

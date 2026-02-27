@@ -1,7 +1,7 @@
 import type { SQLiteDatabase } from "expo-sqlite";
 import { ALL_TABLES } from "./schema";
 
-const CURRENT_VERSION = 5;
+const CURRENT_VERSION = 6;
 
 export async function migrateDbIfNeeded(db: SQLiteDatabase) {
   const result = await db.getFirstAsync<{ user_version: number }>(
@@ -90,6 +90,34 @@ export async function migrateDbIfNeeded(db: SQLiteDatabase) {
         "ALTER TABLE exercises ADD COLUMN is_cable INTEGER NOT NULL DEFAULT 0"
       );
     }
+  }
+
+  // v5→v6 : health data columns + body weight tracking
+  if (currentVersion < 6) {
+    try {
+      await db.execAsync(
+        "ALTER TABLE workout_sessions ADD COLUMN avg_heart_rate INTEGER"
+      );
+    } catch (_) { /* column may already exist */ }
+    try {
+      await db.execAsync(
+        "ALTER TABLE workout_sessions ADD COLUMN max_heart_rate INTEGER"
+      );
+    } catch (_) { /* column may already exist */ }
+    try {
+      await db.execAsync(
+        "ALTER TABLE workout_sessions ADD COLUMN calories_burned INTEGER"
+      );
+    } catch (_) { /* column may already exist */ }
+    await db.execAsync(
+      `CREATE TABLE IF NOT EXISTS body_weight_logs (
+        id TEXT PRIMARY KEY NOT NULL,
+        weight REAL NOT NULL,
+        date TEXT NOT NULL,
+        synced INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      )`
+    );
   }
 
   await db.execAsync(`PRAGMA user_version = ${CURRENT_VERSION}`);
